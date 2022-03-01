@@ -2,6 +2,9 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QtGui>
+#include <QInputDialog>
+#include <add_ss.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -17,5 +20,11 @@ public:
 
 private:
     Ui::MainWindow *ui;
+    void create_sample_sheet();
+    QVector<QAction *> list_ss;
+    QVector<QString> sheet_list_bd;
+private slots:
+    void add_sample_sheet();
+   // void read_size_list_fsh();
 };
 #endif // MAINWINDOW_H
