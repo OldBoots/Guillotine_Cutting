@@ -8,9 +8,10 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     create_sample_sheet();
     connect(list_ss[0], SIGNAL(triggered()), SLOT(add_sample_sheet()));
-//    for(int i = 1; i < list_ss.size(); i++){
-//        connect(list_ss[i], SIGNAL(triggered()), SLOT(read_size_list_fsh()));
-//    }
+    connect(list_ss[1], SIGNAL(triggered()), SLOT(read_size_list_fsh()));
+    ui->graphicsView->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    ui->graphicsView->setScene(scene);
+    scene->addItem(sheetList);
 
 }
 
@@ -21,7 +22,7 @@ MainWindow::~MainWindow()
 void MainWindow::create_sample_sheet(){
     QAction *plus = new QAction();
     QAction *a4 = new QAction();
-    a4->setText("210 x 297");
+    a4->setText("297 x 210");
     plus->setText("Добавить шаблон..");
     list_ss.push_back(plus);
     list_ss.push_back(a4);
@@ -32,6 +33,8 @@ void MainWindow::create_sample_sheet(){
         sheet->setText(sheet_list_bd[i]);
         list_ss.push_back(sheet);
         ui->menu->addAction(list_ss[list_ss.size()-1]);
+        connect(list_ss[list_ss.size()-1], SIGNAL(triggered()), SLOT(read_size_list_fsh()));
+
     }
 
 }
@@ -42,19 +45,27 @@ void MainWindow::add_sample_sheet(){
     QString we_he;
     if(dialog->exec()){
         qDebug()<<"we = "<<dialog->w<<" he ="<<dialog->h;
-        we_he = QString::number(dialog->w);
-        we_he +=" x "+ QString::number(dialog->h);
+        we_he = QString::number(dialog->h);
+        we_he +=" x "+ QString::number(dialog->w);
     }
     QAction *sheet = new QAction();
     ui->menu->addAction(sheet);
     sheet->setText(we_he);
-    list_ss.push_front(sheet);
+    list_ss.push_back(sheet);
+    connect(list_ss[list_ss.size()-1], SIGNAL(triggered()), SLOT(read_size_list_fsh()));
 
 }
-//void MainWindow::read_size_list_fsh(){
-//    qDebug()<<name;
-//    QStringList we_he;
-//    we_he = name.split(" x ");
-//    qDebug()<<we_he[0].toInt()<<" "<<we_he[1].toInt();
+void MainWindow::paint_list_sheet(int w, int h){
+    ui->graphicsView->update();
+    sheetList->setRect(0,0,w,h);
+}
+void MainWindow::read_size_list_fsh(){
+    QObject *name = QObject::sender();
+    QAction *sheet = qobject_cast<QAction*>(name);
+    qDebug()<<sheet->text();
+    QStringList we_he = sheet->text().split(" x ");
+    qDebug()<<we_he[0].toInt()<<" "<<we_he[1].toInt();
+    paint_list_sheet(we_he[0].toInt(),we_he[1].toInt());
 
-//}
+}
+

@@ -5,7 +5,8 @@
 #include <QtGui>
 #include <QInputDialog>
 #include <add_ss.h>
-
+#include <QGraphicsScene>
+#include <QGraphicsRectItem>
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -23,8 +24,11 @@ private:
     void create_sample_sheet();
     QVector<QAction *> list_ss;
     QVector<QString> sheet_list_bd;
+    QGraphicsScene *scene = new QGraphicsScene();
+    QGraphicsRectItem *sheetList = new QGraphicsRectItem();
+    void paint_list_sheet(int w, int h);
 private slots:
     void add_sample_sheet();
-   // void read_size_list_fsh();
+    void read_size_list_fsh();
 };
 #endif // MAINWINDOW_H
