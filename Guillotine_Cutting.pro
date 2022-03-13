@@ -10,12 +10,16 @@ CONFIG += c++11
 
 SOURCES += \
     add_ss.cpp \
+    form.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    stock.cpp
 
 HEADERS += \
     add_ss.h \
-    mainwindow.h
+    form.h \
+    mainwindow.h \
+    stock.h
 
 FORMS += \
     add_ss.ui \
