@@ -10,6 +10,8 @@ MainWindow::MainWindow(QWidget *parent)
     create_sample_sheet();
     ui->graphicsView->setAlignment(Qt::AlignLeft | Qt::AlignTop);
     ui->graphicsView->setScene(scene);
+    message_for_client->setStyleSheet("QLabel {font-size: 14pt; color : red;}");
+    ui->statusbar->addWidget(message_for_client);
     paint_list_sheet(297,210);
     scene->addItem(sample_sheet);
 
@@ -53,30 +55,28 @@ void MainWindow::algoritm_cutting(){
     ProjectRect current_stock;
     bool flag_next_form = true;
     bool flag_no_valid_stok = true;
-    int index_form = 0;
-
     for (int i = 0; i < vec_form_info.size(); i++) {
         for (int j = 0; j < vec_form_info[i].numb(); j++) {
-            vec_form << ProjectRect(0, 0, vec_form_info[i].width(), vec_form_info[i].length(), vec_form_info[i].name());
+            vec_form << ProjectRect(0, 0, vec_form_info[i].width(), vec_form_info[i].length(), vec_form_info[i].name(), false);
         }
     }
-
     int count_form = vec_form.size();
     qDebug() << "cf = " << count_form;
     while(count_form != 0 && !vec_stok.isEmpty()){
         flag_next_form = true;
         for (int i = 0; i < vec_stok.size() && flag_next_form; i++) {
             flag_no_valid_stok = true;
-            for (int j = index_form; j < vec_form.size() && flag_next_form; j++){
-                if(vec_form[j].width() <= vec_stok[i].width()){
+            for (int j = 0; j < vec_form.size() && flag_next_form; j++){
+                if(vec_form[j].width() <= vec_stok[i].width() && !vec_form[j].added()){
                     if(vec_form[j].length() <= vec_stok[i].length()){
                         current_stock = vec_stok[i];
                         vec_stok.remove(i);
                         vec_form[j].set_top(current_stock.top());
+                        vec_form[j].set_added(true);
                         count_form--;
                         flag_next_form = false;
                         flag_no_valid_stok = false;
-                        index_form++;
+
                         if(current_stock.width() > vec_form[j].width()){
                             add_stock_in_vec(ProjectRect(current_stock.x() + vec_form[j].width(),
                                                          current_stock.y(),
@@ -100,6 +100,15 @@ void MainWindow::algoritm_cutting(){
         }
         qDebug() << "WhileC";
     }
+    for(int i = 0, check_null_null = 0; i < vec_form.size(); i++){
+        if(vec_form[i].x() == 0 && vec_form[i].y() == 0){
+            check_null_null++;
+        }
+        if(check_null_null>1){
+            emit sig_error("Не удалось разместить все формы на листе._S4");
+            return;
+        }
+    }
     qDebug() << "End While";
     for (int i = 0; i < vec_form.size(); i++) {
         qDebug() << i << ") " << vec_form[i].name() << "(" << vec_form[i].x() << ", " << vec_form[i].y() << ")";
@@ -110,12 +119,12 @@ void MainWindow::algoritm_cutting(){
 void MainWindow::slot_error(QString error_massage){
     QStringList message = error_massage.split("_");
     error_code = message[1];
-    ui->statusbar->showMessage(message[0]);
+    message_for_client->setText(message[0]);
 }
 
 void MainWindow::clear_all_data(){
     clear_scene();
-    if(!ui->statusbar->currentMessage().isEmpty()){ ui->statusbar->clearMessage(); error_code.clear(); }
+    if(!message_for_client->text().isEmpty()){ message_for_client->clear(); message_for_client->update();/*message_for_client->setText("")*/; error_code.clear(); }
     if(!vec_form_info.isEmpty()){ vec_form_info.clear(); }
     if(!vec_form.isEmpty()){ vec_form.clear(); }
     if(!vec_stok.isEmpty()){ vec_stok.clear(); }

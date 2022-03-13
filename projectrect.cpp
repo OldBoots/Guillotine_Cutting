@@ -4,18 +4,29 @@ ProjectRect::ProjectRect(){
 
 }
 
-ProjectRect::ProjectRect(int x, int y, int width, int length, QString name){
+bool ProjectRect::added(){
+    return r_added;
+}
+
+void ProjectRect::set_added(bool added){
+    r_added = added;
+}
+
+
+ProjectRect::ProjectRect(int x, int y, int width, int length, QString name, bool added){
     r_top = QPoint(x, y);
     r_width = width;
     r_length = length;
     r_name = name;
+    r_added = added;
 }
 
-ProjectRect::ProjectRect(QPoint top, int width, int length, QString name){
+ProjectRect::ProjectRect(QPoint top, int width, int length, QString name, bool added){
     r_top = top;
     r_width = width;
     r_length = length;
     r_name = name;
+    r_added = added;
 }
 
 void ProjectRect::operator=(ProjectRect other){

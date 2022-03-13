@@ -9,9 +9,10 @@ class ProjectRect{        // Параметры заготовки.
     QPoint r_top;
     int r_length;
     int r_width;
+    bool r_added;
 public:
-    ProjectRect(QPoint top, int width, int length, QString name = QString());
-    ProjectRect(int x, int y, int width, int length, QString name = QString());
+    ProjectRect(QPoint top, int width, int length, QString name = QString(), bool added = false);
+    ProjectRect(int x, int y, int width, int length, QString name = QString(), bool added = false);
     ProjectRect();
     QString name();
     QPoint top();
@@ -19,6 +20,8 @@ public:
     int y();
     int length();
     int width();
+    bool added();
+    void set_added(bool added);
     void set_top(QPoint top);
     void set_top(int x, int y);
     void operator=(ProjectRect other);

@@ -62,7 +62,7 @@ private:
     QGraphicsRectItem *sample_sheet = new QGraphicsRectItem;
     QSize currnet_sheet;
     QString error_code;
-
+    QLabel *message_for_client = new QLabel;
     const size_t increase = 2;
     Ui::MainWindow *ui;
 };
