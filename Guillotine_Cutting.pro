@@ -13,13 +13,13 @@ SOURCES += \
     form.cpp \
     main.cpp \
     mainwindow.cpp \
-    stock.cpp
+    projectrect.cpp
 
 HEADERS += \
     add_ss.h \
     form.h \
     mainwindow.h \
-    stock.h
+    projectrect.h
 
 FORMS += \
     add_ss.ui \

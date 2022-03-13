@@ -12,7 +12,7 @@
 #include <QGraphicsTextItem>
 #include "form.h"
 #include "add_ss.h"
-#include "stock.h"
+#include "projectrect.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -33,11 +33,12 @@ private:
     void add_input_field();                     // Добавление фрейма с полями для ввода данных.
     void create_sample_sheet();                 // Создание шаблонов листов.
     void paint_list_sheet(int w, int h);        // Отрисовка листа.
-    void paint_list_rects(QVector<QGraphicsRectItem *> rects, QVector<QGraphicsTextItem *>text_rects);// Отрисовка всех ректов на грф. сцене.
-    void setstyle_list_text_rects(QGraphicsTextItem &text_rect, QGraphicsRectItem *rect);
+    void paint_list_vec_rects();                    // Отрисовка всех ректов на грф. сцене.
+    void setstyle_list_vec_text_rects(QGraphicsTextItem &text_rect, QGraphicsRectItem *rect);
     void clear_scene();
-    void recursive_cutting();                   // Рекурсивный алгоритм.
-    void add_stock_in_vec(Stock cur_stock);     // Добавление заготовки в вектор с сортировкой по возрастанию.
+    void algoritm_cutting();                   // Рекурсивный алгоритм.
+    void add_stock_in_vec(ProjectRect cur_stock);     // Добавление заготовки в вектор с сортировкой по возрастанию.
+    void paint_vec_form();
 
 private slots:
     void slot_del_input_field();                // Удаление фрейма по нажатию кнопки с крестиком.
@@ -48,15 +49,16 @@ private slots:
     void slot_error(QString error_message);     // Обработчик ошибок. Выводит текст сообщения в статус-бар.
 
 private:
-    QVector<Stock> vec_stok;
-    QVector<QAction *> list_ss;
-    QVector<QString> sheet_list_bd;
-    QVector<QGraphicsRectItem *> rects;
-    QVector<QGraphicsTextItem *> text_rects;
-    QVector<Form> vec_form;
+    QVector<ProjectRect> vec_stok;
+    QVector<QAction *> vec_list_ss;
+    QVector<QString> vec_sheet_list_bd;
+    QVector<QGraphicsRectItem *> vec_rects;
+    QVector<QGraphicsTextItem *> vec_text_rects;
+    QVector<Form> vec_form_info;
+    QVector<ProjectRect> vec_form;
     QVector<QFrame *> vec_frame;
-    QGraphicsScene *scene = new QGraphicsScene();
-    QGraphicsRectItem *sheetList = new QGraphicsRectItem();
+    QGraphicsScene *scene = new QGraphicsScene;
+    QGraphicsRectItem *sample_sheet = new QGraphicsRectItem;
     QSize currnet_sheet;
     QString error_code;
 

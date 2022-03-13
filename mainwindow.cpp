@@ -10,15 +10,23 @@ MainWindow::MainWindow(QWidget *parent)
     create_sample_sheet();
     ui->graphicsView->setAlignment(Qt::AlignLeft | Qt::AlignTop);
     ui->graphicsView->setScene(scene);
-    scene->addItem(sheetList);
+    scene->addItem(sample_sheet);
+    QGraphicsRectItem * ttt = new QGraphicsRectItem;
+    ttt->setRect(0,0,40,40);
+    scene->addItem(ttt);
+    scene->removeItem(ttt);
     connect(this, SIGNAL(sig_check_complet()), this, SLOT(slot_edit_finished()));
-    connect(list_ss[0], SIGNAL(triggered()), SLOT(slot_add_sample_sheet()));
-    connect(list_ss[1], SIGNAL(triggered()), SLOT(slot_read_size_list_fsh()));
+    connect(vec_list_ss[0], SIGNAL(triggered()), SLOT(slot_add_sample_sheet()));
+    connect(vec_list_ss[1], SIGNAL(triggered()), SLOT(slot_read_size_list_fsh()));
     connect(ui->pushButton, SIGNAL(clicked()), this, SLOT(slot_run()));
     connect(this, SIGNAL(sig_error(QString)), this, SLOT(slot_error(QString)));
 }
 
-void MainWindow::add_stock_in_vec(Stock cur_stock){
+MainWindow::~MainWindow(){
+    delete ui;
+}
+
+void MainWindow::add_stock_in_vec(ProjectRect cur_stock){
     vec_stok << cur_stock;
     for (int i = vec_stok.size() - 1; i > 0 ; i--) {
         if(vec_stok[i].width() < vec_stok[i - 1].width()){
@@ -30,10 +38,70 @@ void MainWindow::add_stock_in_vec(Stock cur_stock){
     }
 }
 
-void MainWindow::recursive_cutting(){
-    for (int i = 0; i < vec_stok.size(); i++) {
-
+void MainWindow::paint_vec_form(){
+    for (int i = 0; i < vec_form.size(); i++) {
+        vec_rects << new QGraphicsRectItem(vec_form[i].x() * increase, vec_form[i].y() * increase, vec_form[i].width() * increase, vec_form[i].length() * increase);
+        vec_text_rects << new QGraphicsTextItem(vec_form[i].name());
     }
+    paint_list_vec_rects();
+}
+
+void MainWindow::algoritm_cutting(){
+    ProjectRect current_stock;
+    bool flag_next_form = true;
+    bool flag_no_valid_stok = true;
+    int index_form = 0;
+
+    for (int i = 0; i < vec_form_info.size(); i++) {
+        for (int j = 0; j < vec_form_info[i].numb(); j++) {
+            vec_form << ProjectRect(0, 0, vec_form_info[i].width(), vec_form_info[i].length(), vec_form_info[i].name());
+        }
+    }
+
+    int count_form = vec_form.size();
+    qDebug() << "cf = " << count_form;
+    while(count_form != 0 && !vec_stok.isEmpty()){
+        flag_next_form = true;
+        for (int i = 0; i < vec_stok.size() && flag_next_form; i++) {
+            flag_no_valid_stok = true;
+            for (int j = index_form; j < vec_form.size() && flag_next_form; j++){
+                if(vec_form[j].width() <= vec_stok[i].width()){
+                    if(vec_form[j].length() <= vec_stok[i].length()){
+                        current_stock = vec_stok[i];
+                        vec_stok.remove(i);
+                        vec_form[j].set_top(current_stock.top());
+                        count_form--;
+                        flag_next_form = false;
+                        flag_no_valid_stok = false;
+                        index_form++;
+                        if(current_stock.width() > vec_form[j].width()){
+                            add_stock_in_vec(ProjectRect(current_stock.x() + vec_form[j].width(),
+                                                         current_stock.y(),
+                                                         current_stock.width() - vec_form[j].width(),
+                                                         current_stock.length()));
+
+                        }
+                        if(current_stock.length() > vec_form[j].length()){
+                            add_stock_in_vec(ProjectRect(current_stock.x(),
+                                                         current_stock.y() + vec_form[j].length(),
+                                                         vec_form[j].width(),
+                                                         current_stock.length() - vec_form[j].length()));
+                        }
+                    }
+                }
+            }
+            if(flag_no_valid_stok){
+                vec_stok.remove(i);
+                i--;
+            }
+        }
+        qDebug() << "WhileC";
+    }
+    qDebug() << "End While";
+    for (int i = 0; i < vec_form.size(); i++) {
+        qDebug() << i << ") " << vec_form[i].name() << "(" << vec_form[i].x() << ", " << vec_form[i].y() << ")";
+    }
+    paint_vec_form();
 }
 
 void MainWindow::slot_error(QString error_massage){
@@ -43,9 +111,16 @@ void MainWindow::slot_error(QString error_massage){
 }
 
 void MainWindow::slot_run(){
-    if(!vec_form.isEmpty()){ vec_form.clear(); }
     if(!ui->statusbar->currentMessage().isEmpty()){ ui->statusbar->clearMessage(); error_code.clear(); }
-    vec_stok << Stock(0, 0, currnet_sheet.width(), currnet_sheet.height());
+    if(!vec_form_info.isEmpty()){ vec_form_info.clear(); }
+    if(!vec_form.isEmpty()){ vec_form.clear(); }
+    if(!vec_stok.isEmpty()){ vec_stok.clear(); }
+    if(!vec_rects.isEmpty()){ vec_rects.clear(); }
+    if(!vec_text_rects.isEmpty()){ vec_text_rects.clear(); }
+    if(!error_code.isEmpty()){ error_code.clear(); }
+
+    clear_scene();
+    vec_stok << ProjectRect(0, 0, currnet_sheet.width(), currnet_sheet.height());
     int area_sheet, area_general = 0;
     area_sheet = currnet_sheet.width() * currnet_sheet.height();
     for (int i = 0; i < vec_frame.size() - 1; i++) {
@@ -64,13 +139,13 @@ void MainWindow::slot_run(){
             return;
         }
         area_general += form.width() * form.length() * form.numb();
-        vec_form << form;
+        vec_form_info << form;
         for (int j = i; j > 0; j--){
-            if(vec_form[j].width() > vec_form[j - 1].width()){
-                qSwap(vec_form[j], vec_form[j - 1]);
-            } else if(vec_form[j].width() == vec_form[j - 1].width() &&
-                      vec_form[j].length() > vec_form[j - 1].length()){
-                qSwap(vec_form[j], vec_form[j - 1]);
+            if(vec_form_info[j].width() > vec_form_info[j - 1].width()){
+                qSwap(vec_form_info[j], vec_form_info[j - 1]);
+            } else if(vec_form_info[j].width() == vec_form_info[j - 1].width() &&
+                      vec_form_info[j].length() > vec_form_info[j - 1].length()){
+                qSwap(vec_form_info[j], vec_form_info[j - 1]);
             } else { break; }
         }
     }
@@ -78,10 +153,10 @@ void MainWindow::slot_run(){
         emit sig_error("Общая площадь форм больше площади листа._S3");
         return;
     }
-    for (int i = 0; i < vec_form.size(); i++) {
-        qDebug() << vec_form[i].width() << " x " << vec_form[i].length();
+    for (int i = 0; i < vec_form_info.size(); i++) {
+        qDebug() << vec_form_info[i].width() << " x " << vec_form_info[i].length();
     }
-
+algoritm_cutting();
 }
 
 void MainWindow::slot_edit_finished(){
@@ -184,37 +259,35 @@ void MainWindow::add_input_field(){
 
 }
 
-MainWindow::~MainWindow()
-{
-    delete ui;
-}
 void MainWindow::clear_scene(){
-    for(int i = 0; i < rects.size(); i++){
-        scene->removeItem(rects[i]);
-        scene->removeItem(text_rects[i]);
+    for(int i = 0; i < vec_rects.size(); i++){
+        scene->removeItem(vec_rects[i]);
+        scene->removeItem(vec_text_rects[i]);
     }
-    scene->update();
-    ui->graphicsView->update();
+//    scene->update();
+//    ui->graphicsView->update();
 }
+
 void MainWindow::create_sample_sheet(){
     QAction *plus = new QAction();
     QAction *a4 = new QAction();
     a4->setText("297 x 210");
     plus->setText("Добавить шаблон..");
-    list_ss.push_back(plus);
-    list_ss.push_back(a4);
-    ui->menu->addAction(list_ss[0]);
-    ui->menu->addAction(list_ss[1]);
-    for(int i = 0; i< sheet_list_bd.size(); i++){
+    vec_list_ss.push_back(plus);
+    vec_list_ss.push_back(a4);
+    ui->menu->addAction(vec_list_ss[0]);
+    ui->menu->addAction(vec_list_ss[1]);
+    for(int i = 0; i< vec_sheet_list_bd.size(); i++){
         QAction *sheet = new QAction();
-        sheet->setText(sheet_list_bd[i]);
-        list_ss.push_back(sheet);
-        ui->menu->addAction(list_ss[list_ss.size()-1]);
-        connect(list_ss[list_ss.size()-1], SIGNAL(triggered()), SLOT(slot_read_size_list_fsh()));
+        sheet->setText(vec_sheet_list_bd[i]);
+        vec_list_ss.push_back(sheet);
+        ui->menu->addAction(vec_list_ss[vec_list_ss.size()-1]);
+        connect(vec_list_ss[vec_list_ss.size()-1], SIGNAL(triggered()), SLOT(slot_read_size_list_fsh()));
 
     }
 
 }
+
 void MainWindow::slot_add_sample_sheet(){
     Add_ss *dialog = new Add_ss;
     dialog->setFixedSize(200, 100);
@@ -228,15 +301,17 @@ void MainWindow::slot_add_sample_sheet(){
     QAction *sheet = new QAction();
     ui->menu->addAction(sheet);
     sheet->setText(we_he);
-    list_ss.push_back(sheet);
-    connect(list_ss[list_ss.size()-1], SIGNAL(triggered()), SLOT(slot_read_size_list_fsh()));
+    vec_list_ss.push_back(sheet);
+    connect(vec_list_ss[vec_list_ss.size()-1], SIGNAL(triggered()), SLOT(slot_read_size_list_fsh()));
 
 }
+
 void MainWindow::paint_list_sheet(int w, int h){
-    ui->graphicsView->update();
-    sheetList->setRect(0,0,w*increase,h*increase);
+//    ui->graphicsView->update();
+    sample_sheet->setRect(0,0,w*increase,h*increase);
     currnet_sheet = QSize(w, h);
 }
+
 void MainWindow::slot_read_size_list_fsh(){
     qDebug()<<scene->items().size();
     clear_scene();
@@ -249,7 +324,8 @@ void MainWindow::slot_read_size_list_fsh(){
     qDebug()<<we_he[0].toInt()<<" "<<we_he[1].toInt();
     paint_list_sheet(we_he[0].toInt(),we_he[1].toInt());
 }
-void MainWindow::setstyle_list_text_rects(QGraphicsTextItem &text_rect, QGraphicsRectItem *rect){
+
+void MainWindow::setstyle_list_vec_text_rects(QGraphicsTextItem &text_rect, QGraphicsRectItem *rect){
     qreal x_rect, y_rect, w_rect,h_rect;
     QRectF getposrect;
     getposrect = rect->rect();
@@ -260,23 +336,11 @@ void MainWindow::setstyle_list_text_rects(QGraphicsTextItem &text_rect, QGraphic
     font.setPixelSize((w_rect+h_rect)/15);
     text_rect.setFont(font);
 }
-void MainWindow::paint_list_rects(QVector<QGraphicsRectItem *> rects, QVector<QGraphicsTextItem *>text_rects){
-    for(int i = 0; i < rects.size(); i++){
-        if(i == 0){
-            scene->addItem(rects[i]);
-            setstyle_list_text_rects(*text_rects[i], rects[i]);
-            scene->addItem(text_rects[i]);
-        } else{
-            for(int j = i-1; j>=0; j--){
-                scene->addItem(rects[i]);
 
-                if(rects[i]->rect().intersects(rects[j]->rect())){
-                    qDebug()<<"intersect Rect["<<j<<"] Rect["<<i<<"]";
-                }
-
-                setstyle_list_text_rects(*text_rects[i], rects[i]);
-                scene->addItem(text_rects[i]);
-            }
-        }
+void MainWindow::paint_list_vec_rects(){
+    for(int i = 0; i < vec_rects.size(); i++){
+        scene->addItem(vec_rects[i]);
+        setstyle_list_vec_text_rects(*vec_text_rects[i], vec_rects[i]);
+        scene->addItem(vec_text_rects[i]);
     }
 }
