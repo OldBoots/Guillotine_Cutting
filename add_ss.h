@@ -7,8 +7,7 @@ namespace Ui {
 class Add_ss;
 }
 
-class Add_ss : public QDialog
-{
+class Add_ss : public QDialog{          // Диалоговое окно для добавления шаблона
     Q_OBJECT
 
 public:
