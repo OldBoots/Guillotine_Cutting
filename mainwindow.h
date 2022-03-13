@@ -6,33 +6,17 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
-//#include <QtGui>
 #include <QInputDialog>
-#include <add_ss.h>
 #include <QGraphicsScene>
 #include <QGraphicsRectItem>
 #include <QGraphicsTextItem>
+#include "form.h"
+#include "add_ss.h"
+#include "projectrect.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
-
-struct sample_form{
-    QFrame *frm = new QFrame;
-
-    QLabel *lbl_nam = new QLabel;
-    QLabel *lbl_i = new QLabel;
-    QLabel *lbl_l = new QLabel;
-    QLabel *lbl_w = new QLabel;
-    QLabel *lbl_n = new QLabel;
-
-    QLineEdit *ln_nam = new QLineEdit;
-    QLineEdit *ln_l = new QLineEdit;
-    QLineEdit *ln_w = new QLineEdit;
-    QLineEdit *ln_n = new QLineEdit;
-
-    QPushButton *butt_del = new QPushButton;
-};
 
 class MainWindow : public QMainWindow
 {
@@ -42,29 +26,44 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 signals:
-    void check_complet();
+    void sig_check_complet();                   // Запускает проверку на необходимость добавления фрейма.
+    void sig_error(QString error_message);      // Для вывода сообщения об ошибке.
+
 private:
-    void add_input_field();
-    void create_sample_sheet();
-    void paint_list_sheet(int w, int h);
-    void paint_list_rects(QVector<QGraphicsRectItem *> rects, QVector<QGraphicsTextItem *>text_rects);
-    void setstyle_list_text_rects(QGraphicsTextItem &text_rect, QGraphicsRectItem *rect);
-    void clear();
-private:
-    QVector<sample_form> vec_form;
-    QVector<QAction *> list_ss;
-    QVector<QString> sheet_list_bd;
-    QGraphicsScene *scene = new QGraphicsScene();
-    QGraphicsRectItem *sheetList = new QGraphicsRectItem();
-    QVector<QGraphicsRectItem *> rects;
-    QVector<QGraphicsTextItem *> text_rects;
-    const size_t increase = 3;
-    Ui::MainWindow *ui;
+    void add_input_field();                     // Добавление фрейма с полями для ввода данных.
+    void create_sample_sheet();                 // Создание шаблонов листов.
+    void paint_list_sheet(int w, int h);        // Отрисовка листа.
+    void paint_list_vec_rects();                    // Отрисовка всех ректов на грф. сцене.
+    void setstyle_list_vec_text_rects(QGraphicsTextItem &text_rect, QGraphicsRectItem *rect);
+    void algoritm_cutting();                   // Рекурсивный алгоритм.
+    void add_stock_in_vec(ProjectRect cur_stock);     // Добавление заготовки в вектор с сортировкой по возрастанию.
+    void paint_vec_form();
+    void clear_scene();
+    void clear_all_data();
 
 private slots:
-    void del_input_field();
-    void slot_edit_finished();
-    void add_sample_sheet();
-    void read_size_list_fsh();
+    void slot_del_input_field();                // Удаление фрейма по нажатию кнопки с крестиком.
+    void slot_edit_finished();                  // Проверка на заполненость полей данных. Требуется ли создать новый фрейм?
+    void slot_add_sample_sheet();               // Добавление нового шаблона в меню-бар.
+    void slot_read_size_list_fsh();             // Получение данных о выбраном шаблоне в меню-баре.
+    void slot_run();                            // При нажатии "Собрать" выполняется подготовка данных и вызывается сам алгоритм.
+    void slot_error(QString error_message);     // Обработчик ошибок. Выводит текст сообщения в статус-бар.
+
+private:
+    QVector<ProjectRect> vec_stok;
+    QVector<QAction *> vec_list_ss;
+    QVector<QString> vec_sheet_list_bd;
+    QVector<QGraphicsRectItem *> vec_rects;
+    QVector<QGraphicsTextItem *> vec_text_rects;
+    QVector<Form> vec_form_info;
+    QVector<ProjectRect> vec_form;
+    QVector<QFrame *> vec_frame;
+    QGraphicsScene *scene = new QGraphicsScene;
+    QGraphicsRectItem *sample_sheet = new QGraphicsRectItem;
+    QSize currnet_sheet;
+    QString error_code;
+    QLabel *message_for_client = new QLabel;
+    const size_t increase = 2;
+    Ui::MainWindow *ui;
 };
 #endif // MAINWINDOW_H
