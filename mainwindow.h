@@ -35,10 +35,11 @@ private:
     void paint_list_sheet(int w, int h);        // Отрисовка листа.
     void paint_list_vec_rects();                    // Отрисовка всех ректов на грф. сцене.
     void setstyle_list_vec_text_rects(QGraphicsTextItem &text_rect, QGraphicsRectItem *rect);
-    void clear_scene();
     void algoritm_cutting();                   // Рекурсивный алгоритм.
     void add_stock_in_vec(ProjectRect cur_stock);     // Добавление заготовки в вектор с сортировкой по возрастанию.
     void paint_vec_form();
+    void clear_scene();
+    void clear_all_data();
 
 private slots:
     void slot_del_input_field();                // Удаление фрейма по нажатию кнопки с крестиком.

@@ -10,11 +10,9 @@ MainWindow::MainWindow(QWidget *parent)
     create_sample_sheet();
     ui->graphicsView->setAlignment(Qt::AlignLeft | Qt::AlignTop);
     ui->graphicsView->setScene(scene);
+    paint_list_sheet(297,210);
     scene->addItem(sample_sheet);
-    QGraphicsRectItem * ttt = new QGraphicsRectItem;
-    ttt->setRect(0,0,40,40);
-    scene->addItem(ttt);
-    scene->removeItem(ttt);
+
     connect(this, SIGNAL(sig_check_complet()), this, SLOT(slot_edit_finished()));
     connect(vec_list_ss[0], SIGNAL(triggered()), SLOT(slot_add_sample_sheet()));
     connect(vec_list_ss[1], SIGNAL(triggered()), SLOT(slot_read_size_list_fsh()));
@@ -40,8 +38,13 @@ void MainWindow::add_stock_in_vec(ProjectRect cur_stock){
 
 void MainWindow::paint_vec_form(){
     for (int i = 0; i < vec_form.size(); i++) {
-        vec_rects << new QGraphicsRectItem(vec_form[i].x() * increase, vec_form[i].y() * increase, vec_form[i].width() * increase, vec_form[i].length() * increase);
-        vec_text_rects << new QGraphicsTextItem(vec_form[i].name());
+        vec_rects << new QGraphicsRectItem(vec_form[i].x() * increase,
+                                           vec_form[i].y() * increase,
+                                           vec_form[i].width() * increase,
+                                           vec_form[i].length() * increase);
+        vec_text_rects << new QGraphicsTextItem(vec_form[i].name()+"\n"+
+                                                QString::number(vec_form[i].width())+"x"+
+                                                QString::number(vec_form[i].length()));
     }
     paint_list_vec_rects();
 }
@@ -110,7 +113,8 @@ void MainWindow::slot_error(QString error_massage){
     ui->statusbar->showMessage(message[0]);
 }
 
-void MainWindow::slot_run(){
+void MainWindow::clear_all_data(){
+    clear_scene();
     if(!ui->statusbar->currentMessage().isEmpty()){ ui->statusbar->clearMessage(); error_code.clear(); }
     if(!vec_form_info.isEmpty()){ vec_form_info.clear(); }
     if(!vec_form.isEmpty()){ vec_form.clear(); }
@@ -118,8 +122,10 @@ void MainWindow::slot_run(){
     if(!vec_rects.isEmpty()){ vec_rects.clear(); }
     if(!vec_text_rects.isEmpty()){ vec_text_rects.clear(); }
     if(!error_code.isEmpty()){ error_code.clear(); }
+}
 
-    clear_scene();
+void MainWindow::slot_run(){
+    clear_all_data();
     vec_stok << ProjectRect(0, 0, currnet_sheet.width(), currnet_sheet.height());
     int area_sheet, area_general = 0;
     area_sheet = currnet_sheet.width() * currnet_sheet.height();
@@ -170,6 +176,7 @@ void MainWindow::slot_edit_finished(){
 }
 
 void MainWindow::slot_del_input_field(){
+    clear_all_data();
     if(vec_frame.size() > 1){
         int n_form = vec_frame.size();
         bool del_flg = false;
@@ -183,7 +190,7 @@ void MainWindow::slot_del_input_field(){
                 del_flg = true;
             }
             if(vec_frame.size() == i){ break; }
-            if(del_flg){ vec_frame[i]->findChild<QLabel *>("lbl_index")->setText(QString::number(i + 1)); }
+            if(del_flg){ vec_frame[i]->findChild<QLabel *>("lbl_index")->setText(QString::number(i + 1));}
         }
     } else {
         vec_frame[vec_frame.size() - 1]->findChild<QPushButton *>("butt_del")->setChecked(false);
@@ -198,6 +205,7 @@ void MainWindow::add_input_field(){
     QLabel *lbl_length = new QLabel(vec_frame[vec_frame.size() - 1]);
     QLabel *lbl_width = new QLabel(vec_frame[vec_frame.size() - 1]);
     QLabel *lbl_index = new QLabel(vec_frame[vec_frame.size() - 1]);
+    lbl_index->setObjectName("lbl_index");
     QLabel *lbl_number = new QLabel(vec_frame[vec_frame.size() - 1]);
     QLabel *lbl_name = new QLabel(vec_frame[vec_frame.size() - 1]);
     QLineEdit *ln_length = new QLineEdit(vec_frame[vec_frame.size() - 1]);
