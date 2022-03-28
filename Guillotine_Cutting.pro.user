@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 6.0.2, 2022-03-28T16:16:42. -->
+<!-- Written by QtCreator 6.0.2, 2022-03-28T18:27:33. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -245,6 +245,7 @@
     <value type="bool" key="RunConfiguration.UseLibrarySearchPath">true</value>
     <value type="bool" key="RunConfiguration.UseQmlDebugger">false</value>
     <value type="bool" key="RunConfiguration.UseQmlDebuggerAuto">true</value>
+    <value type="bool" key="RunConfiguration.UseTerminal">true</value>
     <value type="QString" key="RunConfiguration.WorkingDirectory.default">/Users/lev.chupryno/QtProject/build-Guillotine_Cutting-Qt_6_2_3_for_macOS-Debug/Guillotine_Cutting.app/Contents/MacOS</value>
    </valuemap>
    <value type="qlonglong" key="ProjectExplorer.Target.RunConfigurationCount">1</value>

@@ -40,6 +40,7 @@ private:
     void paint_vec_form();
     void clear_scene();
     void clear_all_data();
+    void sort_vec_form_info(bool sort_index);
     bool check_on_dimension(int stok_w, int stok_l);
 
 private slots:
@@ -65,6 +66,7 @@ private:
     QString error_code;
     QLabel *message_for_client = new QLabel;
     const size_t increase = 1;
+    QVector<int> vfii;
     Ui::MainWindow *ui;
 };
 

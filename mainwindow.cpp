@@ -12,7 +12,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->graphicsView->setScene(scene);
     message_for_client->setStyleSheet("QLabel {font-size: 14pt; color : red;}");
     ui->statusbar->addWidget(message_for_client);
-    paint_list_sheet(297,210);
+    paint_list_sheet(680,490);
     scene->addItem(sample_sheet);
 
     connect(this, SIGNAL(sig_check_complet()), this, SLOT(slot_edit_finished()));
@@ -136,35 +136,41 @@ void MainWindow::slot_run(){
     clear_all_data();
     int area_sheet, area_general = 0;
     area_sheet = currnet_sheet.width() * currnet_sheet.height();
-    // Считываем данные с полей ввода
-    for (int i = 0; i < vec_frame.size() - 1; i++) {
-        FormInfo form(vec_frame[i]->findChild<QLineEdit *>("ln_name")->text(),
-                      vec_frame[i]->findChild<QLineEdit *>("ln_length")->text().toInt(),
-                      vec_frame[i]->findChild<QLineEdit *>("ln_width")->text().toInt(),
-                      vec_frame[i]->findChild<QLineEdit *>("ln_number")->text().toInt());
-        if(vec_frame[i]->findChild<QLineEdit *>("ln_length")->text().isEmpty() ||
-                vec_frame[i]->findChild<QLineEdit *>("ln_width")->text().isEmpty() ||
-                vec_frame[i]->findChild<QLineEdit *>("ln_number")->text().isEmpty()){
-            emit sig_error("Ворма \"" + form.name() + "\" задана неверно._S1");
-            return;
-        }
-        if((currnet_sheet.width() < form.width() || currnet_sheet.height() < form.length())){
-            emit sig_error("Форма \"" + form.name() + "\" не входит на лист._S2");
-            return;
-        }
-        area_general += form.width() * form.length() * form.numb();
-        // Добавляем запись в вектор vec_form_info
-        vec_form_info << form;
-        // Сортирует добавленную форму по ширине
-        for (int j = i; j > 0; j--){
-            if(vec_form_info[j].width() > vec_form_info[j - 1].width()){
-                qSwap(vec_form_info[j], vec_form_info[j - 1]);
-            } else if(vec_form_info[j].width() == vec_form_info[j - 1].width() &&
-                      vec_form_info[j].length() > vec_form_info[j - 1].length()){
-                qSwap(vec_form_info[j], vec_form_info[j - 1]);
-            } else { break; }
-        }
-    }
+    //    // Считываем данные с полей ввода
+    //    for (int i = 0; i < vec_frame.size() - 1; i++) {
+    //        FormInfo form(vec_frame[i]->findChild<QLineEdit *>("ln_name")->text(),
+    //                      vec_frame[i]->findChild<QLineEdit *>("ln_length")->text().toInt(),
+    //                      vec_frame[i]->findChild<QLineEdit *>("ln_width")->text().toInt(),
+    //                      vec_frame[i]->findChild<QLineEdit *>("ln_number")->text().toInt());
+    //        if(vec_frame[i]->findChild<QLineEdit *>("ln_length")->text().isEmpty() ||
+    //                vec_frame[i]->findChild<QLineEdit *>("ln_width")->text().isEmpty() ||
+    //                vec_frame[i]->findChild<QLineEdit *>("ln_number")->text().isEmpty()){
+    //            emit sig_error("Ворма \"" + form.name() + "\" задана неверно._S1");
+    //            return;
+    //        }
+    //        if((currnet_sheet.width() < form.width() || currnet_sheet.height() < form.length())){
+    //            emit sig_error("Форма \"" + form.name() + "\" не входит на лист._S2");
+    //            return;
+    //        }
+    //        area_general += form.width() * form.length() * form.numb();
+    //        // Добавляем запись в вектор vec_form_info
+    //        vec_form_info << form;
+    //        // Сортирует добавленную форму по ширине
+    //        for (int j = i; j > 0; j--){
+    //            if(vec_form_info[j].width() > vec_form_info[j - 1].width()){
+    //                qSwap(vec_form_info[j], vec_form_info[j - 1]);
+    //            } else if(vec_form_info[j].width() == vec_form_info[j - 1].width() &&
+    //                      vec_form_info[j].length() > vec_form_info[j - 1].length()){
+    //                qSwap(vec_form_info[j], vec_form_info[j - 1]);
+    //            } else { break; }
+    //        }
+    //    }
+    vec_form_info << FormInfo("244х134 мм — 4 шт.", 244, 134, 4);
+    vec_form_info << FormInfo("184х134 мм — 1 шт..", 184, 134, 1);
+    vec_form_info << FormInfo("134х104 мм — 10 шт.", 134, 104, 10);
+    vec_form_info << FormInfo("2134х69 мм — 2 шт.", 134, 69, 2);
+    // Сортируем группы форм по убыванию
+    sort_vec_form_info(false);
     if(area_sheet < area_general){
         emit sig_error("Общая площадь форм больше площади листа._S3");
         return;
@@ -175,20 +181,18 @@ void MainWindow::slot_run(){
             vec_form << ProjectRect(0, 0, vec_form_info[i].width(), vec_form_info[i].length(), vec_form_info[i].name(), false);
         }
     }
-    // Алгоритм выбора поворота деталей
-    QVector <bool> group_complete;
-    QVector<int> vfii;
+    // =========================== Алгоритм выбора поворота деталей =========================== //
+
     // Вектор вариантов поворотов групп
+    QVector <bool> group_complete;
     group_complete.resize(vec_form_info.size(), 0);
     bool ngv = true;
-    // Вектор индексов групп форм
+    // Инициализируем вектор индексов групп форм
     for (int i = 0; i < vec_form_info.size(); i++) {
         vfii << i;
     }
-    int fff = 3;
     // Цикл перебора вариантов компановок
-    while(algoritm_cutting() != 0 && ngv && fff != 0){
-        fff--;
+    while(algoritm_cutting() != 0 && ngv){
         // Отчищаем вектора обрезков и и форм
         vec_stok.clear();
         vec_form.clear();
@@ -199,25 +203,7 @@ void MainWindow::slot_run(){
             vec_form_info[i].set_turn(group_complete[i]);
         }
         // Сортируем группы форм
-        for(int i = 0; i < vec_form_info.size() - 1; i++){
-            for (int j = i; j > 0; j--) {
-                if(vec_form_info[vfii[j]].turn()){
-                    if(vec_form_info[vfii[j]].length() > vec_form_info[vfii[j - 1]].length()){
-                        qSwap(vfii[j], vfii[j - 1]);
-                    } else if(vec_form_info[vfii[j]].length() == vec_form_info[vfii[j - 1]].length() &&
-                              vec_form_info[vfii[j]].width() > vec_form_info[vfii[j - 1]].width()){
-                        qSwap(vfii[j], vfii[j - 1]);
-                    } /*else { break; }*/
-                } else {
-                    if(vec_form_info[vfii[j]].width() > vec_form_info[vfii[j - 1]].width()){
-                        qSwap(vfii[j], vfii[j - 1]);
-                    } else if(vec_form_info[vfii[j]].width() == vec_form_info[vfii[j - 1]].width() &&
-                              vec_form_info[vfii[j]].length() > vec_form_info[vfii[j - 1]].length()){
-                        qSwap(vfii[j], vfii[j - 1]);
-                    } /*else { break; }*/
-                }
-            }
-        }
+        sort_vec_form_info(true);
         for (int i = 0; i < vec_form_info.size(); i++) {
             qDebug() << vec_form_info[vfii[i]].width() << " x " << vec_form_info[vfii[i]].length() << " - " << vec_form_info[vfii[i]].turn();
         }
@@ -236,6 +222,48 @@ void MainWindow::slot_run(){
     qDebug() << ngv;
     // Отрисовываем результат
     paint_vec_form();
+//
+}
+
+void MainWindow::sort_vec_form_info(bool sort_index){
+    for(int i = 0; i < vec_form_info.size() - 1; i++) {
+        for (int j = 0; j < vec_form_info.size() - 1 - i; j++) {
+            if(sort_index) {
+                if(vec_form_info[vfii[j]].length() < vec_form_info[vfii[j + 1]].length()){
+                    qSwap(vfii[j], vfii[j + 1]);
+                } else if(vec_form_info[vfii[j]].length() == vec_form_info[vfii[j + 1]].length() &&
+                          vec_form_info[vfii[j]].width() < vec_form_info[vfii[j + 1]].width()){
+                    qSwap(vfii[j], vfii[ + 1]);
+                }
+            } else {
+                if(vec_form_info[j].length() < vec_form_info[j + 1].length()){
+                    qSwap(vec_form_info[j], vec_form_info[j + 1]);
+                } else if(vec_form_info[j].length() == vec_form_info[j + 1].length() &&
+                          vec_form_info[j].width() < vec_form_info[j + 1].width()){
+                    qSwap(vec_form_info[j], vec_form_info[j + 1]);
+                }
+            }
+        }
+    }
+    //    for(int i = 0; i < vec_form_info.size() - 1; i++) {
+    //        for (int j = 0; j < vec_form_info.size() - 1 - i; j++) {
+    //            if(vec_form_info[j].turn()){
+    //                if(vec_form_info[j].length() < vec_form_info[j + 1].length()){
+    //                    qSwap(vec_form_info[j], vec_form_info[j + 1]);
+    //                } else if(vec_form_info[j].length() == vec_form_info[j + 1].length() &&
+    //                          vec_form_info[j].width() < vec_form_info[j + 1].width()){
+    //                    qSwap(vec_form_info[j], vec_form_info[j + 1]);
+    //                } /*else { break; }*/
+    //            } else {
+    //                if(vec_form_info[j].width() < vec_form_info[j + 1].width()){
+    //                    qSwap(vec_form_info[j], vec_form_info[j + 1]);
+    //                } else if(vec_form_info[j].width() == vec_form_info[j + 1].width() &&
+    //                          vec_form_info[j].length() < vec_form_info[j + 1].length()){
+    //                    qSwap(vec_form_info[j], vec_form_info[j + 1]);
+    //                } /*else { break; }*/
+    //            }
+    //        }
+    //    }
 }
 
 bool MainWindow::check_on_dimension(int stok_w, int stok_l){
