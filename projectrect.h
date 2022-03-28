@@ -10,6 +10,7 @@ class ProjectRect{        // Параметры заготовки.
     int r_length;
     int r_width;
     bool r_added;
+    bool r_turn;
 public:
     ProjectRect(QPoint top, int width, int length, QString name = QString(), bool added = false);
     ProjectRect(int x, int y, int width, int length, QString name = QString(), bool added = false);
@@ -21,6 +22,8 @@ public:
     int length();
     int width();
     bool added();
+    bool turn();
+    void set_turn(bool turn);
     void set_added(bool added);
     void set_top(QPoint top);
     void set_top(int x, int y);
