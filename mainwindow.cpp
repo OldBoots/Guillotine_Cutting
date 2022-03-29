@@ -12,7 +12,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->graphicsView->setScene(scene);
     message_for_client->setStyleSheet("QLabel {font-size: 14pt; color : red;}");
     ui->statusbar->addWidget(message_for_client);
-    paint_list_sheet(297,210);
+    paint_list_sheet(680,490);
     scene->addItem(sample_sheet);
 
     connect(this, SIGNAL(sig_check_complet()), this, SLOT(slot_edit_finished()));
@@ -51,45 +51,43 @@ void MainWindow::paint_vec_form(){
     paint_list_vec_rects();
 }
 
-void MainWindow::algoritm_cutting(){
+bool MainWindow::algoritm_cutting(){
     ProjectRect current_stock;
     bool flag_next_form = true;
     bool flag_no_valid_stok = true;
-    for (int i = 0; i < vec_form_info.size(); i++) {
-        for (int j = 0; j < vec_form_info[i].numb(); j++) {
-            vec_form << ProjectRect(0, 0, vec_form_info[i].width(), vec_form_info[i].length(), vec_form_info[i].name(), false);
-        }
-    }
     int count_form = vec_form.size();
-    qDebug() << "cf = " << count_form;
+    // Алгоритм будет выполняться пока не кончатся мерные обрезки или формы
     while(count_form != 0 && !vec_stok.isEmpty()){
         flag_next_form = true;
+        // Проходим остатки
         for (int i = 0; i < vec_stok.size() && flag_next_form; i++) {
             flag_no_valid_stok = true;
+            // Пытаемся поместить форму
             for (int j = 0; j < vec_form.size() && flag_next_form; j++){
-                if(vec_form[j].width() <= vec_stok[i].width() && !vec_form[j].added()){
-                    if(vec_form[j].length() <= vec_stok[i].length()){
-                        current_stock = vec_stok[i];
-                        vec_stok.remove(i);
-                        vec_form[j].set_top(current_stock.top());
-                        vec_form[j].set_added(true);
-                        count_form--;
-                        flag_next_form = false;
-                        flag_no_valid_stok = false;
-
-                        if(current_stock.width() > vec_form[j].width()){
-                            add_stock_in_vec(ProjectRect(current_stock.x() + vec_form[j].width(),
-                                                         current_stock.y(),
-                                                         current_stock.width() - vec_form[j].width(),
-                                                         current_stock.length()));
-
-                        }
-                        if(current_stock.length() > vec_form[j].length()){
-                            add_stock_in_vec(ProjectRect(current_stock.x(),
-                                                         current_stock.y() + vec_form[j].length(),
-                                                         vec_form[j].width(),
-                                                         current_stock.length() - vec_form[j].length()));
-                        }
+                // Если форма не добавленна, влазит по l и w, то помещаем ее
+                if(!vec_form[j].added() && vec_form[j].width() <= vec_stok[i].width() &&
+                        vec_form[j].length() <= vec_stok[i].length()){
+                    current_stock = vec_stok[i];
+                    vec_stok.remove(i);
+                    vec_form[j].set_top(current_stock.top());
+                    vec_form[j].set_added(true);
+                    count_form--;
+                    flag_next_form = false;
+                    flag_no_valid_stok = false;
+                    // Добавляем Два получившихся остатка, если они мерные
+                    if(current_stock.width() > vec_form[j].width() &&
+                            check_on_dimension(current_stock.width() - vec_form[j].width(), current_stock.length())){
+                        add_stock_in_vec(ProjectRect(current_stock.x() + vec_form[j].width(),
+                                                     current_stock.y(),
+                                                     current_stock.width() - vec_form[j].width(),
+                                                     current_stock.length()));
+                    }
+                    if(current_stock.length() > vec_form[j].length() &&
+                            check_on_dimension(vec_form[j].width(), current_stock.length() - vec_form[j].length())){
+                        add_stock_in_vec(ProjectRect(current_stock.x(),
+                                                     current_stock.y() + vec_form[j].length(),
+                                                     vec_form[j].width(),
+                                                     current_stock.length() - vec_form[j].length()));
                     }
                 }
             }
@@ -98,22 +96,15 @@ void MainWindow::algoritm_cutting(){
                 i--;
             }
         }
-        qDebug() << "WhileC";
     }
-    for(int i = 0, check_null_null = 0; i < vec_form.size(); i++){
-        if(vec_form[i].x() == 0 && vec_form[i].y() == 0){
-            check_null_null++;
-        }
-        if(check_null_null>1){
-            emit sig_error("Не удалось разместить все формы на листе._S4");
-            return;
+    // Проверяем получилось ли разместить все формы
+    bool complete = true;
+    for(int i = 0; i < vec_form.size(); i++){
+        if(!vec_form[i].added()){
+            complete = false;
         }
     }
-    qDebug() << "End While";
-    for (int i = 0; i < vec_form.size(); i++) {
-        qDebug() << i << ") " << vec_form[i].name() << "(" << vec_form[i].x() << ", " << vec_form[i].y() << ")";
-    }
-    paint_vec_form();
+    return complete;
 }
 
 void MainWindow::slot_error(QString error_massage){
@@ -124,25 +115,28 @@ void MainWindow::slot_error(QString error_massage){
 
 void MainWindow::clear_all_data(){
     clear_scene();
-    if(!message_for_client->text().isEmpty()){ message_for_client->clear(); message_for_client->update();/*message_for_client->setText("")*/; error_code.clear(); }
+    if(!message_for_client->text().isEmpty()){ message_for_client->clear(); message_for_client->update(); error_code.clear(); }
     if(!vec_form_info.isEmpty()){ vec_form_info.clear(); }
     if(!vec_form.isEmpty()){ vec_form.clear(); }
     if(!vec_stok.isEmpty()){ vec_stok.clear(); }
     if(!vec_rects.isEmpty()){ vec_rects.clear(); }
     if(!vec_text_rects.isEmpty()){ vec_text_rects.clear(); }
     if(!error_code.isEmpty()){ error_code.clear(); }
+    if(!vfii.isEmpty()){ vfii.clear(); }
+    if(!vec_solution.isEmpty()){ vec_solution.clear(); }
 }
 
 void MainWindow::slot_run(){
+    // Обнуляем данные
     clear_all_data();
-    vec_stok << ProjectRect(0, 0, currnet_sheet.width(), currnet_sheet.height());
     int area_sheet, area_general = 0;
     area_sheet = currnet_sheet.width() * currnet_sheet.height();
+    // Считываем данные с полей ввода
     for (int i = 0; i < vec_frame.size() - 1; i++) {
-        Form form(vec_frame[i]->findChild<QLineEdit *>("ln_name")->text(),
-                  vec_frame[i]->findChild<QLineEdit *>("ln_length")->text().toInt(),
-                  vec_frame[i]->findChild<QLineEdit *>("ln_width")->text().toInt(),
-                  vec_frame[i]->findChild<QLineEdit *>("ln_number")->text().toInt());
+        FormInfo form(vec_frame[i]->findChild<QLineEdit *>("ln_name")->text(),
+                      vec_frame[i]->findChild<QLineEdit *>("ln_length")->text().toInt(),
+                      vec_frame[i]->findChild<QLineEdit *>("ln_width")->text().toInt(),
+                      vec_frame[i]->findChild<QLineEdit *>("ln_number")->text().toInt());
         if(vec_frame[i]->findChild<QLineEdit *>("ln_length")->text().isEmpty() ||
                 vec_frame[i]->findChild<QLineEdit *>("ln_width")->text().isEmpty() ||
                 vec_frame[i]->findChild<QLineEdit *>("ln_number")->text().isEmpty()){
@@ -154,24 +148,121 @@ void MainWindow::slot_run(){
             return;
         }
         area_general += form.width() * form.length() * form.numb();
+        // Добавляем запись в вектор vec_form_info
         vec_form_info << form;
-        for (int j = i; j > 0; j--){
-            if(vec_form_info[j].width() > vec_form_info[j - 1].width()){
-                qSwap(vec_form_info[j], vec_form_info[j - 1]);
-            } else if(vec_form_info[j].width() == vec_form_info[j - 1].width() &&
-                      vec_form_info[j].length() > vec_form_info[j - 1].length()){
-                qSwap(vec_form_info[j], vec_form_info[j - 1]);
-            } else { break; }
-        }
     }
+    // Сортируем группы форм по убыванию
+    sort_vec_form_info(false);
     if(area_sheet < area_general){
         emit sig_error("Общая площадь форм больше площади листа._S3");
         return;
     }
+    // Заполняем вектор форм
     for (int i = 0; i < vec_form_info.size(); i++) {
-        qDebug() << vec_form_info[i].width() << " x " << vec_form_info[i].length();
+        for (int j = 0; j < vec_form_info[i].numb(); j++) {
+            vec_form << ProjectRect(0, 0, vec_form_info[i].width(), vec_form_info[i].length(), vec_form_info[i].name(), false);
+        }
     }
-algoritm_cutting();
+    //
+    algoritm_search_comb();
+
+}
+
+bool MainWindow::algoritm_search_comb(){
+    ComboFormInfo combo_form;
+    // Вектор вариантов поворотов групп
+    QVector <bool> group_complete;
+    group_complete.resize(vec_form_info.size(), 0);
+    bool ngv = true;
+    // Инициализируем вектор индексов групп форм
+    for (int i = 0; i < vec_form_info.size(); i++) {
+        vfii << i;
+    }
+    // Цикл перебора вариантов компановок
+    while(ngv){
+        // Алгоритм разреза
+        if(algoritm_cutting()){
+            for (int i = 0; i < vec_form.size(); i++) {
+                combo_form.f_name = vec_form[i].name();
+                combo_form.f_top = vec_form[i].top();
+                combo_form.f_widht = vec_form[i].width();
+                combo_form.f_lenght = vec_form[i].length();
+                vec_comb_form << combo_form;
+            }
+            vec_solution << vec_comb_form;
+        }
+        // Отчищаем вектора данных перед итерацией
+        vec_comb_form.clear();
+        vec_stok.clear();
+        vec_form.clear();
+        // Первый остаток
+        vec_stok << ProjectRect(0, 0, currnet_sheet.width(), currnet_sheet.height());
+        // Задаем повороты групп
+        for (int i = 0; i < vec_form_info.size(); i++) {
+            vec_form_info[i].set_turn(group_complete[i]);
+        }
+        // Сортируем группы форм
+        sort_vec_form_info(true);
+        // Заполняем вектор форм данными о поворотах
+        for (int i = 0; i < vec_form_info.size(); i++) {
+            for (int j = 0; j < vec_form_info[vfii[i]].numb(); j++) {
+                vec_form << ProjectRect(0, 0, vec_form_info[vfii[i]].width(), vec_form_info[vfii[i]].length(), vec_form_info[vfii[i]].name(), false);
+                vec_form[vec_form.size() - 1].set_turn(vec_form_info[vfii[i]].turn());
+            }
+        }
+        // Выбераем следующую комбинацию поворотов
+        ngv = next_group_variant(group_complete);
+    }
+    // Получено ли решение? Если вектор НЕ пустой, то решение получено
+    return !vec_solution.isEmpty();
+}
+
+void MainWindow::sort_vec_form_info(bool sort_index){
+    for(int i = 0; i < vec_form_info.size() - 1; i++) {
+        for (int j = 0; j < vec_form_info.size() - 1 - i; j++) {
+            if(sort_index) {
+                if(vec_form_info[vfii[j]].length() < vec_form_info[vfii[j + 1]].length()){
+                    qSwap(vfii[j], vfii[j + 1]);
+                } else if(vec_form_info[vfii[j]].length() == vec_form_info[vfii[j + 1]].length() &&
+                          vec_form_info[vfii[j]].width() < vec_form_info[vfii[j + 1]].width()){
+                    qSwap(vfii[j], vfii[ + 1]);
+                }
+            } else {
+                if(vec_form_info[j].length() < vec_form_info[j + 1].length()){
+                    qSwap(vec_form_info[j], vec_form_info[j + 1]);
+                } else if(vec_form_info[j].length() == vec_form_info[j + 1].length() &&
+                          vec_form_info[j].width() < vec_form_info[j + 1].width()){
+                    qSwap(vec_form_info[j], vec_form_info[j + 1]);
+                }
+            }
+        }
+    }
+}
+
+bool MainWindow::check_on_dimension(int stok_w, int stok_l){
+    // Проверяем влазит ли хоть одна оставшаяся форма в этот обрезок
+    for (int i = 0; i < vec_form.size(); i++) {
+        if(!vec_form[i].added() && stok_w >= vec_form[i].width() && stok_l >= vec_form[i].length()){
+            return true;
+        }
+    }
+    return false;
+}
+
+bool next_group_variant(QVector <bool> &group_complete){
+    for (int i = group_complete.size() - 1; i >= 0;) {
+        if(group_complete[i] == 0){
+            group_complete[i] = 1;
+            break;
+        } else {
+            group_complete[i] = 0;
+            i--;
+        }
+        if(i < 0){
+            return false;
+        }
+    }
+    return true;
 }
 
 void MainWindow::slot_edit_finished(){
@@ -281,8 +372,8 @@ void MainWindow::clear_scene(){
         scene->removeItem(vec_rects[i]);
         scene->removeItem(vec_text_rects[i]);
     }
-//    scene->update();
-//    ui->graphicsView->update();
+    //    scene->update();
+    //    ui->graphicsView->update();
 }
 
 void MainWindow::create_sample_sheet(){
@@ -324,7 +415,7 @@ void MainWindow::slot_add_sample_sheet(){
 }
 
 void MainWindow::paint_list_sheet(int w, int h){
-//    ui->graphicsView->update();
+    //    ui->graphicsView->update();
     sample_sheet->setRect(0,0,w*increase,h*increase);
     currnet_sheet = QSize(w, h);
 }

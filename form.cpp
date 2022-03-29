@@ -1,40 +1,50 @@
 #include "form.h"
 
-Form::Form(int length, int width){
-    this->f_length = length;
-    this->f_width = width;
+FormInfo::FormInfo(int length, int width){
+    f_length = length;
+    f_width = width;
+    f_turn = false;
 }
 
-Form::Form(QSize size){
-    this->f_length = size.height();
-    this->f_width = size.width();
+FormInfo::FormInfo(QSize size){
+    f_length = size.height();
+    f_width = size.width();
+    f_turn = false;
 }
 
-Form::Form(QString name, int length, int width, int n_form){
-    this->f_name = name;
-    this->f_length = length;
-    this->f_width = width;
-    this->f_n_form = n_form;
+FormInfo::FormInfo(QString name, int length, int width, int n_form){
+    f_name = name;
+    f_length = length;
+    f_width = width;
+    f_n_form = n_form;
+    f_turn = false;
 }
 
-QSize Form::get_size(){
+QSize FormInfo::get_size(){
     return QSize(f_width, f_length);
 }
 
-QString Form::name(){
+QString FormInfo::name(){
     return f_name;
 }
 
-int Form::numb(){
+int FormInfo::numb(){
     return f_n_form;
 }
 
-int Form::length(){
+int FormInfo::length(){
     return f_length;
 }
 
-int Form::width(){
+int FormInfo::width(){
     return f_width;
 }
 
-Form::~Form(){}
+bool FormInfo::turn(){
+    return f_turn;
+}
+void FormInfo::set_turn(bool turn){
+    f_turn = turn;
+}
+
+FormInfo::~FormInfo(){}
