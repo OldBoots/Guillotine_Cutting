@@ -18,6 +18,14 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
+
+struct ComboFormInfo{
+    QString f_name;
+    QPoint f_top;
+    int f_widht;
+    int f_lenght;
+};
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -35,12 +43,13 @@ private:
     void paint_list_sheet(int w, int h);        // Отрисовка листа.
     void paint_list_vec_rects();                    // Отрисовка всех ректов на грф. сцене.
     void setstyle_list_vec_text_rects(QGraphicsTextItem &text_rect, QGraphicsRectItem *rect);
-    int algoritm_cutting();                   // Рекурсивный алгоритм.
     void add_stock_in_vec(ProjectRect cur_stock);     // Добавление заготовки в вектор с сортировкой по возрастанию.
     void paint_vec_form();
     void clear_scene();
     void clear_all_data();
     void sort_vec_form_info(bool sort_index);
+    bool algoritm_search_comb();
+    bool algoritm_cutting();                   // Рекурсивный алгоритм.
     bool check_on_dimension(int stok_w, int stok_l);
 
 private slots:
@@ -60,13 +69,15 @@ private:
     QVector<FormInfo> vec_form_info;
     QVector<ProjectRect> vec_form;
     QVector<QFrame *> vec_frame;
+    QVector<int> vfii;
+    QVector<ComboFormInfo> vec_comb_form;
+    QVector<QVector<ComboFormInfo>> vec_solution;
     QGraphicsScene *scene = new QGraphicsScene;
     QGraphicsRectItem *sample_sheet = new QGraphicsRectItem;
     QSize currnet_sheet;
     QString error_code;
     QLabel *message_for_client = new QLabel;
     const size_t increase = 1;
-    QVector<int> vfii;
     Ui::MainWindow *ui;
 };
 

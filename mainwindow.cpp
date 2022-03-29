@@ -51,7 +51,7 @@ void MainWindow::paint_vec_form(){
     paint_list_vec_rects();
 }
 
-int MainWindow::algoritm_cutting(){
+bool MainWindow::algoritm_cutting(){
     ProjectRect current_stock;
     bool flag_next_form = true;
     bool flag_no_valid_stok = true;
@@ -97,21 +97,14 @@ int MainWindow::algoritm_cutting(){
             }
         }
     }
-    int space_form = 0, space_general = currnet_sheet.width() * currnet_sheet.height();
-    // Проверяем получилось ли разместить все формы, если до, возвращем 0, иначе площадь остатков
+    // Проверяем получилось ли разместить все формы
     bool complete = true;
     for(int i = 0; i < vec_form.size(); i++){
-        if(vec_form[i].added()){
-            space_form += vec_form[i].length() * vec_form[i].width();
-        } else {
+        if(!vec_form[i].added()){
             complete = false;
         }
     }
-    if(complete){
-        return 0;
-    } else {
-        return space_general - space_form;
-    }
+    return complete;
 }
 
 void MainWindow::slot_error(QString error_massage){
@@ -129,6 +122,8 @@ void MainWindow::clear_all_data(){
     if(!vec_rects.isEmpty()){ vec_rects.clear(); }
     if(!vec_text_rects.isEmpty()){ vec_text_rects.clear(); }
     if(!error_code.isEmpty()){ error_code.clear(); }
+    if(!vfii.isEmpty()){ vfii.clear(); }
+    if(!vec_solution.isEmpty()){ vec_solution.clear(); }
 }
 
 void MainWindow::slot_run(){
@@ -136,39 +131,26 @@ void MainWindow::slot_run(){
     clear_all_data();
     int area_sheet, area_general = 0;
     area_sheet = currnet_sheet.width() * currnet_sheet.height();
-    //    // Считываем данные с полей ввода
-    //    for (int i = 0; i < vec_frame.size() - 1; i++) {
-    //        FormInfo form(vec_frame[i]->findChild<QLineEdit *>("ln_name")->text(),
-    //                      vec_frame[i]->findChild<QLineEdit *>("ln_length")->text().toInt(),
-    //                      vec_frame[i]->findChild<QLineEdit *>("ln_width")->text().toInt(),
-    //                      vec_frame[i]->findChild<QLineEdit *>("ln_number")->text().toInt());
-    //        if(vec_frame[i]->findChild<QLineEdit *>("ln_length")->text().isEmpty() ||
-    //                vec_frame[i]->findChild<QLineEdit *>("ln_width")->text().isEmpty() ||
-    //                vec_frame[i]->findChild<QLineEdit *>("ln_number")->text().isEmpty()){
-    //            emit sig_error("Ворма \"" + form.name() + "\" задана неверно._S1");
-    //            return;
-    //        }
-    //        if((currnet_sheet.width() < form.width() || currnet_sheet.height() < form.length())){
-    //            emit sig_error("Форма \"" + form.name() + "\" не входит на лист._S2");
-    //            return;
-    //        }
-    //        area_general += form.width() * form.length() * form.numb();
-    //        // Добавляем запись в вектор vec_form_info
-    //        vec_form_info << form;
-    //        // Сортирует добавленную форму по ширине
-    //        for (int j = i; j > 0; j--){
-    //            if(vec_form_info[j].width() > vec_form_info[j - 1].width()){
-    //                qSwap(vec_form_info[j], vec_form_info[j - 1]);
-    //            } else if(vec_form_info[j].width() == vec_form_info[j - 1].width() &&
-    //                      vec_form_info[j].length() > vec_form_info[j - 1].length()){
-    //                qSwap(vec_form_info[j], vec_form_info[j - 1]);
-    //            } else { break; }
-    //        }
-    //    }
-    vec_form_info << FormInfo("244х134 мм — 4 шт.", 244, 134, 4);
-    vec_form_info << FormInfo("184х134 мм — 1 шт..", 184, 134, 1);
-    vec_form_info << FormInfo("134х104 мм — 10 шт.", 134, 104, 10);
-    vec_form_info << FormInfo("2134х69 мм — 2 шт.", 134, 69, 2);
+    // Считываем данные с полей ввода
+    for (int i = 0; i < vec_frame.size() - 1; i++) {
+        FormInfo form(vec_frame[i]->findChild<QLineEdit *>("ln_name")->text(),
+                      vec_frame[i]->findChild<QLineEdit *>("ln_length")->text().toInt(),
+                      vec_frame[i]->findChild<QLineEdit *>("ln_width")->text().toInt(),
+                      vec_frame[i]->findChild<QLineEdit *>("ln_number")->text().toInt());
+        if(vec_frame[i]->findChild<QLineEdit *>("ln_length")->text().isEmpty() ||
+                vec_frame[i]->findChild<QLineEdit *>("ln_width")->text().isEmpty() ||
+                vec_frame[i]->findChild<QLineEdit *>("ln_number")->text().isEmpty()){
+            emit sig_error("Ворма \"" + form.name() + "\" задана неверно._S1");
+            return;
+        }
+        if((currnet_sheet.width() < form.width() || currnet_sheet.height() < form.length())){
+            emit sig_error("Форма \"" + form.name() + "\" не входит на лист._S2");
+            return;
+        }
+        area_general += form.width() * form.length() * form.numb();
+        // Добавляем запись в вектор vec_form_info
+        vec_form_info << form;
+    }
     // Сортируем группы форм по убыванию
     sort_vec_form_info(false);
     if(area_sheet < area_general){
@@ -181,8 +163,13 @@ void MainWindow::slot_run(){
             vec_form << ProjectRect(0, 0, vec_form_info[i].width(), vec_form_info[i].length(), vec_form_info[i].name(), false);
         }
     }
-    // =========================== Алгоритм выбора поворота деталей =========================== //
+    //
+    algoritm_search_comb();
 
+}
+
+bool MainWindow::algoritm_search_comb(){
+    ComboFormInfo combo_form;
     // Вектор вариантов поворотов групп
     QVector <bool> group_complete;
     group_complete.resize(vec_form_info.size(), 0);
@@ -192,11 +179,23 @@ void MainWindow::slot_run(){
         vfii << i;
     }
     // Цикл перебора вариантов компановок
-    while(algoritm_cutting() != 0 && ngv){
-        // Отчищаем вектора обрезков и и форм
+    while(ngv){
+        // Алгоритм разреза
+        if(algoritm_cutting()){
+            for (int i = 0; i < vec_form.size(); i++) {
+                combo_form.f_name = vec_form[i].name();
+                combo_form.f_top = vec_form[i].top();
+                combo_form.f_widht = vec_form[i].width();
+                combo_form.f_lenght = vec_form[i].length();
+                vec_comb_form << combo_form;
+            }
+            vec_solution << vec_comb_form;
+        }
+        // Отчищаем вектора данных перед итерацией
+        vec_comb_form.clear();
         vec_stok.clear();
         vec_form.clear();
-        // Первый обрезок
+        // Первый остаток
         vec_stok << ProjectRect(0, 0, currnet_sheet.width(), currnet_sheet.height());
         // Задаем повороты групп
         for (int i = 0; i < vec_form_info.size(); i++) {
@@ -204,10 +203,6 @@ void MainWindow::slot_run(){
         }
         // Сортируем группы форм
         sort_vec_form_info(true);
-        for (int i = 0; i < vec_form_info.size(); i++) {
-            qDebug() << vec_form_info[vfii[i]].width() << " x " << vec_form_info[vfii[i]].length() << " - " << vec_form_info[vfii[i]].turn();
-        }
-        qDebug("");
         // Заполняем вектор форм данными о поворотах
         for (int i = 0; i < vec_form_info.size(); i++) {
             for (int j = 0; j < vec_form_info[vfii[i]].numb(); j++) {
@@ -215,14 +210,11 @@ void MainWindow::slot_run(){
                 vec_form[vec_form.size() - 1].set_turn(vec_form_info[vfii[i]].turn());
             }
         }
-        qDebug() << group_complete;
         // Выбераем следующую комбинацию поворотов
         ngv = next_group_variant(group_complete);
     }
-    qDebug() << ngv;
-    // Отрисовываем результат
-    paint_vec_form();
-//
+    // Получено ли решение? Если вектор НЕ пустой, то решение получено
+    return !vec_solution.isEmpty();
 }
 
 void MainWindow::sort_vec_form_info(bool sort_index){
@@ -245,25 +237,6 @@ void MainWindow::sort_vec_form_info(bool sort_index){
             }
         }
     }
-    //    for(int i = 0; i < vec_form_info.size() - 1; i++) {
-    //        for (int j = 0; j < vec_form_info.size() - 1 - i; j++) {
-    //            if(vec_form_info[j].turn()){
-    //                if(vec_form_info[j].length() < vec_form_info[j + 1].length()){
-    //                    qSwap(vec_form_info[j], vec_form_info[j + 1]);
-    //                } else if(vec_form_info[j].length() == vec_form_info[j + 1].length() &&
-    //                          vec_form_info[j].width() < vec_form_info[j + 1].width()){
-    //                    qSwap(vec_form_info[j], vec_form_info[j + 1]);
-    //                } /*else { break; }*/
-    //            } else {
-    //                if(vec_form_info[j].width() < vec_form_info[j + 1].width()){
-    //                    qSwap(vec_form_info[j], vec_form_info[j + 1]);
-    //                } else if(vec_form_info[j].width() == vec_form_info[j + 1].width() &&
-    //                          vec_form_info[j].length() < vec_form_info[j + 1].length()){
-    //                    qSwap(vec_form_info[j], vec_form_info[j + 1]);
-    //                } /*else { break; }*/
-    //            }
-    //        }
-    //    }
 }
 
 bool MainWindow::check_on_dimension(int stok_w, int stok_l){
