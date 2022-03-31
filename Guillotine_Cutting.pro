@@ -13,12 +13,14 @@ SOURCES += \
     form.cpp \
     main.cpp \
     mainwindow.cpp \
+    project.cpp \
     projectrect.cpp
 
 HEADERS += \
     add_ss.h \
     form.h \
     mainwindow.h \
+    project.h \
     projectrect.h
 
 FORMS += \

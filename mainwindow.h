@@ -3,7 +3,9 @@
 
 #include "add_ss.h"
 #include "form.h"
+#include "project.h"
 #include "projectrect.h"
+#include <QFileDialog>
 #include <QFrame>
 #include <QGraphicsRectItem>
 #include <QGraphicsScene>
@@ -14,19 +16,18 @@
 #include <QMainWindow>
 #include <QPushButton>
 #include <QStringListModel>
-
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
 }
 QT_END_NAMESPACE
 
-struct ComboFormInfo {
-    QString f_name;
-    QPoint f_top;
-    int f_widht;
-    int f_lenght;
-};
+//struct ComboFormInfo {
+//    QString f_name;
+//    QPoint f_top;
+//    int f_widht;
+//    int f_lenght;
+//};
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -50,7 +51,8 @@ private:
     bool algoritm_search_comb();
     bool algoritm_cutting(); // Рекурсивный алгоритм.
     bool check_on_dimension(int stok_w, int stok_l);
-
+    void load_fill_frame();
+    void load_model_view();
 private slots:
     void slot_del_input_field(); // Удаление фрейма по нажатию кнопки с крестиком.
     void slot_edit_finished(); // Проверка на заполненость полей данных. Требуется ли создать новый фрейм?
@@ -59,10 +61,18 @@ private slots:
     void slot_run(); // При нажатии "Собрать" выполняется подготовка данных и вызывается сам алгоритм.
     void slot_error(QString error_message); // Обработчик ошибок. Выводит текст сообщения в статус-бар.
     void slot_paint_solution(const QModelIndex& index); // Отрисовка всех ректов на грф. сцене.
-
+    void slot_load_project(); //Загрузка проекта из json-файла
+    void slot_save_project(); //Сохранение проекта в json-файл, по выбранному пути
+    void slot_save_as_project(); //Сохранение с выбором пути
+    void slot_create_project(); //Удаление проекта
 private:
     QVector<ProjectRect> vec_stok;
     QVector<QAction*> vec_list_ss;
+    QAction* save_project;
+    QAction* save_as_project;
+    QAction* load_project;
+    QAction* create_project;
+    Project proj_work;
     QVector<QString> vec_sheet_list_bd;
     QVector<QGraphicsRectItem*> vec_rects;
     QVector<QGraphicsTextItem*> vec_text_rects;
@@ -70,8 +80,8 @@ private:
     QVector<ProjectRect> vec_form;
     QVector<QFrame*> vec_frame;
     QVector<int> vfii;
-    QVector<ComboFormInfo> vec_comb_form;
-    QVector<QVector<ComboFormInfo>> vec_solution;
+    QVector<ProjectRect> vec_comb_form;
+    QVector<QVector<ProjectRect>> vec_solution;
     QGraphicsScene* scene = new QGraphicsScene;
     QGraphicsRectItem* sample_sheet = new QGraphicsRectItem;
     QSize currnet_sheet;
