@@ -52,6 +52,7 @@ private:
     bool algoritm_cutting(); // Рекурсивный алгоритм.
     bool check_on_dimension(int stok_w, int stok_l);
     void load_fill_frame();
+    void load_model_view();
 private slots:
     void slot_del_input_field(); // Удаление фрейма по нажатию кнопки с крестиком.
     void slot_edit_finished(); // Проверка на заполненость полей данных. Требуется ли создать новый фрейм?
@@ -60,13 +61,17 @@ private slots:
     void slot_run(); // При нажатии "Собрать" выполняется подготовка данных и вызывается сам алгоритм.
     void slot_error(QString error_message); // Обработчик ошибок. Выводит текст сообщения в статус-бар.
     void slot_paint_solution(const QModelIndex& index); // Отрисовка всех ректов на грф. сцене.
-    void slot_save_project(); //Сохранение проекта в json-файл
     void slot_load_project(); //Загрузка проекта из json-файла
+    void slot_save_project(); //Сохранение проекта в json-файл, по выбранному пути
+    void slot_save_as_project(); //Сохранение с выбором пути
+    void slot_create_project(); //Удаление проекта
 private:
     QVector<ProjectRect> vec_stok;
     QVector<QAction*> vec_list_ss;
-    QAction* save;
-    QAction* load;
+    QAction* save_project;
+    QAction* save_as_project;
+    QAction* load_project;
+    QAction* create_project;
     Project proj_work;
     QVector<QString> vec_sheet_list_bd;
     QVector<QGraphicsRectItem*> vec_rects;

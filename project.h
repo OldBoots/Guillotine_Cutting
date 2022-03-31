@@ -16,18 +16,18 @@ private:
     QFile file;
     QJsonDocument doc;
     QJsonObject obj;
-    QString path;
 
 public:
     Project();
     bool save(QVector<FormInfo> vec_form_info, QVector<QVector<ProjectRect>> vec_solution);
     bool saveAs(QVector<FormInfo> vec_form_info, QVector<QVector<ProjectRect>> vec_solution);
     bool load(QVector<FormInfo>& vec_form_info, QVector<QVector<ProjectRect>>& vec_solution);
-    void save_vec_form_info(QVector<FormInfo> vec_form_info);
-    void save_vec_sol(QVector<QVector<ProjectRect>> vec_solution);
+    QString path;
 
 private:
     bool file_open(bool read = false);
+    void save_vec_form_info(QVector<FormInfo> vec_form_info);
+    void save_vec_sol(QVector<QVector<ProjectRect>> vec_solution);
 };
 
 #endif // PROJECT_H

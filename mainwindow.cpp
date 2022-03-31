@@ -16,19 +16,28 @@ MainWindow::MainWindow(QWidget* parent)
     scene->addItem(sample_sheet);
 
     model = new QStringListModel;
-    save = new QAction;
-    save->setText("Сохранить как..");
-    load = new QAction;
-    load->setText("Загрузить");
+    load_project = new QAction;
+    load_project->setText("Открыть проект");
+    save_project = new QAction;
+    save_project->setText("Сохранить");
+    save_as_project = new QAction;
+    save_as_project->setText("Сохранить как..");
+    create_project = new QAction;
+    create_project->setText("Создать проект");
     ui->listView->setModel(model);
     ui->listView->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui->listView->setSelectionMode(QAbstractItemView::SingleSelection);
     ui->listView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-    ui->file->addAction(save);
-    ui->file->addAction(load);
-    connect(load, SIGNAL(triggered()), SLOT(slot_load_project()));
-    connect(save, SIGNAL(triggered()), SLOT(slot_save_project()));
+    ui->file->addAction(create_project);
+    ui->file->addAction(load_project);
+    ui->file->addAction(save_project);
+    ui->file->addAction(save_as_project);
+    connect(load_project, SIGNAL(triggered()), SLOT(slot_load_project()));
+    connect(save_project, SIGNAL(triggered()), SLOT(slot_save_project()));
+    connect(save_as_project, SIGNAL(triggered()), SLOT(slot_save_as_project()));
+    connect(create_project, SIGNAL(triggered()), SLOT(slot_create_project()));
+
     connect(ui->listView, SIGNAL(clicked(const QModelIndex)), this, SLOT(slot_paint_solution(const QModelIndex)));
     connect(this, SIGNAL(sig_check_complet()), this, SLOT(slot_edit_finished()));
     connect(vec_list_ss[0], SIGNAL(triggered()), SLOT(slot_add_sample_sheet()));
@@ -408,6 +417,14 @@ void MainWindow::load_fill_frame()
     }
     add_input_field();
 }
+void MainWindow::load_model_view()
+{
+    QStringList list_solutions;
+    for (int i = 0; i < vec_solution.size(); i++) {
+        list_solutions << "Вариант " + QString::number(i + 1);
+    }
+    model->setStringList(list_solutions);
+}
 void MainWindow::clear_scene()
 {
     for (int i = 0; i < vec_rects.size(); i++) {
@@ -476,6 +493,26 @@ void MainWindow::slot_read_size_list_fsh()
     QStringList we_he = sheet->text().split(" x ");
     paint_list_sheet(we_he[0].toInt(), we_he[1].toInt());
 }
+void MainWindow::slot_save_as_project()
+{
+    proj_work.saveAs(vec_form_info, vec_solution);
+}
+void MainWindow::slot_create_project()
+{
+    clear_all_data();
+    for (int i = vec_frame.size() - 1; i >= 0; i--) {
+        ui->vertical_layout->removeWidget(vec_frame[i]);
+        delete vec_frame[i];
+        vec_frame.remove(i);
+        ui->vertical_layout->update();
+    }
+    clear_scene();
+    add_input_field();
+    proj_work.path = QString();
+    for (int i = model->rowCount() - 1; i >= 0; i--) {
+        model->removeRow(i);
+    }
+}
 void MainWindow::slot_save_project()
 {
     proj_work.save(vec_form_info, vec_solution);
@@ -483,15 +520,19 @@ void MainWindow::slot_save_project()
 void MainWindow::slot_load_project()
 {
     clear_all_data();
-    for (int i = 0; i < vec_frame.size(); i++) {
+    for (int i = vec_frame.size() - 1; i >= 0; i--) {
         ui->vertical_layout->removeWidget(vec_frame[i]);
         delete vec_frame[i];
         vec_frame.remove(i);
         ui->vertical_layout->update();
     }
     clear_scene();
+    for (int i = model->rowCount() - 1; i >= 0; i--) {
+        model->removeRow(i);
+    }
     proj_work.load(vec_form_info, vec_solution);
     load_fill_frame();
+    load_model_view();
 }
 
 void MainWindow::setstyle_list_vec_text_rects(QGraphicsTextItem& text_rect, QGraphicsRectItem* rect)
