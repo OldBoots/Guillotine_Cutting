@@ -16,10 +16,27 @@ MainWindow::MainWindow(QWidget* parent)
     scene->addItem(sample_sheet);
 
     model = new QStringListModel;
+    load_project = new QAction;
+    load_project->setText("Открыть проект");
+    save_project = new QAction;
+    save_project->setText("Сохранить");
+    save_as_project = new QAction;
+    save_as_project->setText("Сохранить как..");
+    create_project = new QAction;
+    create_project->setText("Создать проект");
     ui->listView->setModel(model);
     ui->listView->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui->listView->setSelectionMode(QAbstractItemView::SingleSelection);
     ui->listView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+    ui->file->addAction(create_project);
+    ui->file->addAction(load_project);
+    ui->file->addAction(save_project);
+    ui->file->addAction(save_as_project);
+    connect(load_project, SIGNAL(triggered()), SLOT(slot_load_project()));
+    connect(save_project, SIGNAL(triggered()), SLOT(slot_save_project()));
+    connect(save_as_project, SIGNAL(triggered()), SLOT(slot_save_as_project()));
+    connect(create_project, SIGNAL(triggered()), SLOT(slot_create_project()));
 
     connect(ui->listView, SIGNAL(clicked(const QModelIndex)), this, SLOT(slot_paint_solution(const QModelIndex)));
     connect(this, SIGNAL(sig_check_complet()), this, SLOT(slot_edit_finished()));
@@ -194,7 +211,6 @@ void MainWindow::slot_run()
 
 bool MainWindow::algoritm_search_comb()
 {
-    ComboFormInfo combo_form;
     // Вектор вариантов поворотов групп
     QVector<bool> group_complete;
     group_complete.resize(vec_form_info.size(), 0);
@@ -208,11 +224,7 @@ bool MainWindow::algoritm_search_comb()
         // Алгоритм разреза
         if (algoritm_cutting()) {
             for (int i = 0; i < vec_form.size(); i++) {
-                combo_form.f_name = vec_form[i].name();
-                combo_form.f_top = vec_form[i].top();
-                combo_form.f_widht = vec_form[i].width();
-                combo_form.f_lenght = vec_form[i].length();
-                vec_comb_form << combo_form;
+                vec_comb_form.push_back(ProjectRect(vec_form[i].top(), vec_form[i].width(), vec_form[i].length(), vec_form[i].name()));
             }
             vec_solution << vec_comb_form;
         }
@@ -394,7 +406,25 @@ void MainWindow::add_input_field()
 
     ui->vertical_layout->addWidget(vec_frame[vec_frame.size() - 1]);
 }
-
+void MainWindow::load_fill_frame()
+{
+    for (int i = 0; i < vec_form_info.size(); i++) {
+        add_input_field();
+        vec_frame[i]->findChild<QLineEdit*>("ln_name")->setText(vec_form_info[i].name());
+        vec_frame[i]->findChild<QLineEdit*>("ln_length")->setText(QString::number(vec_form_info[i].length()));
+        vec_frame[i]->findChild<QLineEdit*>("ln_width")->setText(QString::number(vec_form_info[i].width()));
+        vec_frame[i]->findChild<QLineEdit*>("ln_number")->setText(QString::number(vec_form_info[i].numb()));
+    }
+    add_input_field();
+}
+void MainWindow::load_model_view()
+{
+    QStringList list_solutions;
+    for (int i = 0; i < vec_solution.size(); i++) {
+        list_solutions << "Вариант " + QString::number(i + 1);
+    }
+    model->setStringList(list_solutions);
+}
 void MainWindow::clear_scene()
 {
     for (int i = 0; i < vec_rects.size(); i++) {
@@ -463,6 +493,47 @@ void MainWindow::slot_read_size_list_fsh()
     QStringList we_he = sheet->text().split(" x ");
     paint_list_sheet(we_he[0].toInt(), we_he[1].toInt());
 }
+void MainWindow::slot_save_as_project()
+{
+    proj_work.saveAs(vec_form_info, vec_solution);
+}
+void MainWindow::slot_create_project()
+{
+    clear_all_data();
+    for (int i = vec_frame.size() - 1; i >= 0; i--) {
+        ui->vertical_layout->removeWidget(vec_frame[i]);
+        delete vec_frame[i];
+        vec_frame.remove(i);
+        ui->vertical_layout->update();
+    }
+    clear_scene();
+    add_input_field();
+    proj_work.path = QString();
+    for (int i = model->rowCount() - 1; i >= 0; i--) {
+        model->removeRow(i);
+    }
+}
+void MainWindow::slot_save_project()
+{
+    proj_work.save(vec_form_info, vec_solution);
+}
+void MainWindow::slot_load_project()
+{
+    clear_all_data();
+    for (int i = vec_frame.size() - 1; i >= 0; i--) {
+        ui->vertical_layout->removeWidget(vec_frame[i]);
+        delete vec_frame[i];
+        vec_frame.remove(i);
+        ui->vertical_layout->update();
+    }
+    clear_scene();
+    for (int i = model->rowCount() - 1; i >= 0; i--) {
+        model->removeRow(i);
+    }
+    proj_work.load(vec_form_info, vec_solution);
+    load_fill_frame();
+    load_model_view();
+}
 
 void MainWindow::setstyle_list_vec_text_rects(QGraphicsTextItem& text_rect, QGraphicsRectItem* rect)
 {
@@ -482,11 +553,11 @@ void MainWindow::slot_paint_solution(const QModelIndex& index)
 
     clear_scene();
     for (int i = 0; i < vec_solution[index.row()].size(); i++) {
-        vec_rects << new QGraphicsRectItem(vec_solution[index.row()][i].f_top.x() * increase,
-            vec_solution[index.row()][i].f_top.y() * increase,
-            vec_solution[index.row()][i].f_widht * increase,
-            vec_solution[index.row()][i].f_lenght * increase);
-        vec_text_rects << new QGraphicsTextItem(vec_solution[index.row()][i].f_name + "\n" + QString::number(vec_solution[index.row()][i].f_widht) + "x" + QString::number(vec_solution[index.row()][i].f_lenght));
+        vec_rects << new QGraphicsRectItem(vec_solution[index.row()][i].x() * increase,
+            vec_solution[index.row()][i].y() * increase,
+            vec_solution[index.row()][i].width() * increase,
+            vec_solution[index.row()][i].length() * increase);
+        vec_text_rects << new QGraphicsTextItem(vec_solution[index.row()][i].name() + "\n" + QString::number(vec_solution[index.row()][i].width()) + "x" + QString::number(vec_solution[index.row()][i].length()));
     }
     for (int i = 0; i < vec_rects.size(); i++) {
         scene->addItem(vec_rects[i]);
