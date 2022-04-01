@@ -6,44 +6,86 @@ MainWindow::MainWindow(QWidget* parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    add_input_field();
-    create_sample_sheet();
-    ui->graphicsView->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+
+    create_ui();
+    connect_slots();
+}
+
+void MainWindow::create_ui(){
+    // Иницализируем и настраиваем графическу сцену
+    scene = new QGraphicsScene;
     ui->graphicsView->setScene(scene);
+    ui->graphicsView->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    // Настраиваем статус-бар
+    message_for_client = new QLabel;
     message_for_client->setStyleSheet("QLabel {font-size: 14pt; color : red;}");
     ui->statusbar->addWidget(message_for_client);
+    // Заполняем и настраиваем меню-бар
+    // Меню файл
+    faile_actions = new QAction[4];
+    faile_actions[0].setText("Открыть проект");
+    faile_actions[1].setText("Сохранить");
+    faile_actions[2].setText("Сохранить как..");
+    faile_actions[3].setText("Создать проект");
+    for (int i = 0; i < 4; i++) {
+        ui->menu_file->addAction(&faile_actions[i]);
+    }
+    // Меню шаблонов
+    sample_actions = new QAction[2];
+    sample_actions[0].setText("Добавить шаблон");
+    sample_actions[1].setText("Удалить шаблон");
+    sample_actions[1].setCheckable(true);
+    ui->menu_sample->addAction(&sample_actions[0]);
+    ui->menu_sample->addAction(&sample_actions[1]);
+    create_sample_sheet();
     paint_list_sheet(680, 490);
     scene->addItem(sample_sheet);
 
+    // Создаем и настраиваем модель и представление списка вариантов
     model = new QStringListModel;
-    load_project = new QAction;
-    load_project->setText("Открыть проект");
-    save_project = new QAction;
-    save_project->setText("Сохранить");
-    save_as_project = new QAction;
-    save_as_project->setText("Сохранить как..");
-    create_project = new QAction;
-    create_project->setText("Создать проект");
     ui->listView->setModel(model);
     ui->listView->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui->listView->setSelectionMode(QAbstractItemView::SingleSelection);
     ui->listView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    // Добавляем поле ввода данных о форме
+    add_input_field();
+}
 
-    ui->file->addAction(create_project);
-    ui->file->addAction(load_project);
-    ui->file->addAction(save_project);
-    ui->file->addAction(save_as_project);
-    connect(load_project, SIGNAL(triggered()), SLOT(slot_load_project()));
-    connect(save_project, SIGNAL(triggered()), SLOT(slot_save_project()));
-    connect(save_as_project, SIGNAL(triggered()), SLOT(slot_save_as_project()));
-    connect(create_project, SIGNAL(triggered()), SLOT(slot_create_project()));
+void MainWindow::connect_slots(){
+    // Кннектим пункты меню файл
+    connect(&faile_actions[0], SIGNAL(triggered()), SLOT(slot_load_project()));
+    connect(&faile_actions[1], SIGNAL(triggered()), SLOT(slot_save_project()));
+    connect(&faile_actions[2], SIGNAL(triggered()), SLOT(slot_save_as_project()));
+    connect(&faile_actions[3], SIGNAL(triggered()), SLOT(slot_create_project()));
 
-    connect(ui->listView, SIGNAL(clicked(const QModelIndex)), this, SLOT(slot_paint_solution(const QModelIndex)));
+    connect(ui->listView, SIGNAL(clicked(QModelIndex)), this, SLOT(slot_paint_solution(QModelIndex)));
     connect(this, SIGNAL(sig_check_complet()), this, SLOT(slot_edit_finished()));
-    connect(vec_list_ss[0], SIGNAL(triggered()), SLOT(slot_add_sample_sheet()));
-    connect(vec_list_ss[1], SIGNAL(triggered()), SLOT(slot_read_size_list_fsh()));
+
+    connect(&sample_actions[0], SIGNAL(triggered()), SLOT(slot_add_sample_sheet()));
+    connect(&sample_actions[1], SIGNAL(triggered()), SLOT(slot_del_sample_actived()));
+
     connect(ui->pushButton, SIGNAL(clicked()), this, SLOT(slot_run()));
     connect(this, SIGNAL(sig_error(QString)), this, SLOT(slot_error(QString)));
+}
+
+void MainWindow::slot_del_sample_actived(){
+    QFont font;
+    if(sample_actions[1].isChecked()){
+        ui->menu_sample->showTearOffMenu(this->cursor().pos());
+        font.setBold(true);
+        font.setItalic(true);
+    } else {
+        ui->menu_sample->hideTearOffMenu();
+        font.setBold(false);
+        font.setItalic(false);
+    }
+    for (int i = 0; i < vec_sample_sheets.size(); i++) {
+        vec_sample_sheets[i]->setFont(font);
+    }
+}
+
+void MainWindow::preparation_prog(){
+
 }
 
 MainWindow::~MainWindow()
@@ -406,6 +448,7 @@ void MainWindow::add_input_field()
 
     ui->vertical_layout->addWidget(vec_frame[vec_frame.size() - 1]);
 }
+
 void MainWindow::load_fill_frame()
 {
     for (int i = 0; i < vec_form_info.size(); i++) {
@@ -417,6 +460,7 @@ void MainWindow::load_fill_frame()
     }
     add_input_field();
 }
+
 void MainWindow::load_model_view()
 {
     QStringList list_solutions;
@@ -425,6 +469,7 @@ void MainWindow::load_model_view()
     }
     model->setStringList(list_solutions);
 }
+
 void MainWindow::clear_scene()
 {
     for (int i = 0; i < vec_rects.size(); i++) {
@@ -441,62 +486,65 @@ void MainWindow::clear_scene()
     ui->graphicsView->update();
 }
 
-void MainWindow::create_sample_sheet()
-{
-    QAction* plus = new QAction();
-    QAction* a4 = new QAction();
-    a4->setText("297 x 210");
-    plus->setText("Добавить шаблон..");
-    vec_list_ss.push_back(plus);
-    vec_list_ss.push_back(a4);
-    ui->menu->addAction(vec_list_ss[0]);
-    ui->menu->addAction(vec_list_ss[1]);
-    for (int i = 0; i < vec_sheet_list_bd.size(); i++) {
-        QAction* sheet = new QAction();
-        sheet->setText(vec_sheet_list_bd[i]);
-        vec_list_ss.push_back(sheet);
-        ui->menu->addAction(vec_list_ss[vec_list_ss.size() - 1]);
-        connect(vec_list_ss[vec_list_ss.size() - 1], SIGNAL(triggered()), SLOT(slot_read_size_list_fsh()));
-    }
+void MainWindow::create_sample_sheet(){
+//    QAction* plus = new QAction();
+//    QAction* a4 = new QAction();
+//    a4->setText("297 x 210");
+//    plus->setText("Добавить шаблон..");
+//    vec_sample_sheets.push_back(plus);
+//    vec_sample_sheets.push_back(a4);
+//    ui->menu_sample->addAction(vec_sample_sheets[0]);
+//    for (int i = 0; i < vec_sheet_list_bd.size(); i++) {
+//        QAction *sheet = new QAction();
+//        sheet->setText(vec_sheet_list_bd[i]);
+//        vec_sample_sheets.push_back(sheet);
+//        ui->menu_sample->addAction(vec_sample_sheets[vec_sample_sheets.size() - 1]);
+//        connect(vec_sample_sheets[vec_sample_sheets.size() - 1], SIGNAL(triggered()), SLOT(slot_sample_selected()));
+//    }
 }
 
 void MainWindow::slot_add_sample_sheet()
 {
     Add_ss* dialog = new Add_ss;
-    dialog->setFixedSize(200, 100);
-    dialog->setWindowTitle("Создание шаблона");
-    QString we_he;
+    QString size_sample;
     if (dialog->exec()) {
-        we_he = QString::number(dialog->h);
-        we_he += " x " + QString::number(dialog->w);
+        size_sample = QString::number(dialog->l()) + " x " + QString::number(dialog->w());
     }
     QAction* sheet = new QAction();
-    ui->menu->addAction(sheet);
-    sheet->setText(we_he);
-    vec_list_ss.push_back(sheet);
-    connect(vec_list_ss[vec_list_ss.size() - 1], SIGNAL(triggered()), SLOT(slot_read_size_list_fsh()));
+    ui->menu_sample->addAction(sheet);
+    sheet->setText(size_sample);
+    vec_sample_sheets.push_back(sheet);
+    connect(vec_sample_sheets[vec_sample_sheets.size() - 1], SIGNAL(triggered()), SLOT(slot_sample_selected()));
+    paint_list_sheet(dialog->l(), dialog->w());
+    // Написать метод добавления шаблона в файл для сохранения!!!
 }
 
-void MainWindow::paint_list_sheet(int w, int h)
+void MainWindow::paint_list_sheet(int w, int l)
 {
     //    ui->graphicsView->update();
-    sample_sheet->setRect(0, 0, w * increase, h * increase);
-    currnet_sheet = QSize(w, h);
-}
-
-void MainWindow::slot_read_size_list_fsh()
-{
     clear_scene();
-
-    QObject* name = QObject::sender();
-    QAction* sheet = qobject_cast<QAction*>(name);
-    QStringList we_he = sheet->text().split(" x ");
-    paint_list_sheet(we_he[0].toInt(), we_he[1].toInt());
+    sample_sheet->setRect(0, 0, w * increase, l * increase);
+    currnet_sheet = QSize(w, l);
 }
+
+void MainWindow::slot_sample_selected()
+{
+    if(sample_actions[1].isChecked()){
+        // Написать метод удаления шаблона!!!
+        qDebug("Написать метод удаления шаблона!!!");
+    } else{
+        QObject* name = QObject::sender();
+        QAction* sheet = qobject_cast<QAction*>(name);
+        QStringList size_sample = sheet->text().split(" x ");
+        paint_list_sheet(size_sample[0].toInt(), size_sample[1].toInt());
+    }
+}
+
 void MainWindow::slot_save_as_project()
 {
     proj_work.saveAs(vec_form_info, vec_solution);
 }
+
 void MainWindow::slot_create_project()
 {
     clear_all_data();
@@ -513,10 +561,12 @@ void MainWindow::slot_create_project()
         model->removeRow(i);
     }
 }
+
 void MainWindow::slot_save_project()
 {
     proj_work.save(vec_form_info, vec_solution);
 }
+
 void MainWindow::slot_load_project()
 {
     clear_all_data();

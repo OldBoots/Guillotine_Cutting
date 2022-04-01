@@ -7,21 +7,28 @@ Add_ss::Add_ss(QWidget *parent) :
     ui(new Ui::Add_ss)
 {
     ui->setupUi(this);
+    this->setFixedSize(200, 100);
+    this->setWindowTitle("Создание шаблона");
+    length = width = 0;
     ui->buttonBox->button(QDialogButtonBox::Ok)->setText("Oк");
     ui->buttonBox->button(QDialogButtonBox::Cancel)->setText("Отмена");
     ui->line_height->setValidator(new QIntValidator(0, 999, this));
     ui->line_weight->setValidator(new QIntValidator(0, 999, this));
-    qDebug()<<"aa";
 }
 
-Add_ss::~Add_ss()
-{
-
+Add_ss::~Add_ss(){
     delete ui;
 }
+
+int Add_ss::w(){
+    return width;
+}
+
+int Add_ss::l(){
+    return length;
+}
+
 void Add_ss::on_buttonBox_accepted(){
-    w = ui->line_height->text().toInt();
-    qDebug()<<"aa"<<ui->line_height->text();
-    qDebug()<<ui->line_weight->text().toInt();
-    h = ui->line_weight->text().toInt();
+    width = ui->line_height->text().toInt();
+    length = ui->line_weight->text().toInt();
 }
