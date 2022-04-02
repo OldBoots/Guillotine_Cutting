@@ -12,12 +12,14 @@ class Add_ss : public QDialog{          // Диалоговое окно для 
 
 public:
     explicit Add_ss(QWidget *parent = nullptr);
-    int w = 0;
-    int h = 0;
     ~Add_ss();
-
+    int w();
+    int l();
 private:
     Ui::Add_ss *ui;
+    int length;
+    int width;
+
 private slots:
     void on_buttonBox_accepted();
 };

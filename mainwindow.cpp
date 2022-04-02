@@ -6,44 +6,116 @@ MainWindow::MainWindow(QWidget* parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    add_input_field();
-    create_sample_sheet();
-    ui->graphicsView->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+
+    create_ui();
+    preparation_prog();
+    connect_slots();
+}
+
+void MainWindow::closeEvent(QCloseEvent* event)
+{
+    proj_work.save_samples(vec_sample_sheets);
+    QMainWindow::closeEvent(event);
+}
+
+void MainWindow::create_ui()
+{
+    // Иницализируем и настраиваем графическу сцену
+    scene = new QGraphicsScene;
     ui->graphicsView->setScene(scene);
+    ui->graphicsView->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    // Настраиваем статус-бар
+    message_for_client = new QLabel;
     message_for_client->setStyleSheet("QLabel {font-size: 14pt; color : red;}");
     ui->statusbar->addWidget(message_for_client);
-    paint_list_sheet(680, 490);
-    scene->addItem(sample_sheet);
+    // Заполняем и настраиваем меню-бар
+    // Меню файл
+    faile_actions = new QAction[4];
+    faile_actions[0].setText("Открыть проект");
+    faile_actions[1].setText("Сохранить");
+    faile_actions[2].setText("Сохранить как..");
+    faile_actions[3].setText("Создать проект");
+    for (int i = 0; i < 4; i++) {
+        ui->menu_file->addAction(&faile_actions[i]);
+    }
+    // Меню шаблонов
+    sample_actions = new QAction[2];
+    sample_actions[0].setText("Добавить шаблон");
+    sample_actions[1].setText("Удалить шаблон");
+    sample_actions[1].setCheckable(true);
+    ui->menu_sample->addAction(&sample_actions[0]);
+    ui->menu_sample->addAction(&sample_actions[1]);
 
+    // Создаем и настраиваем модель и представление списка вариантов
     model = new QStringListModel;
-    load_project = new QAction;
-    load_project->setText("Открыть проект");
-    save_project = new QAction;
-    save_project->setText("Сохранить");
-    save_as_project = new QAction;
-    save_as_project->setText("Сохранить как..");
-    create_project = new QAction;
-    create_project->setText("Создать проект");
     ui->listView->setModel(model);
     ui->listView->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui->listView->setSelectionMode(QAbstractItemView::SingleSelection);
     ui->listView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    // Добавляем поле ввода данных о форме
+    add_input_field();
+}
 
-    ui->file->addAction(create_project);
-    ui->file->addAction(load_project);
-    ui->file->addAction(save_project);
-    ui->file->addAction(save_as_project);
-    connect(load_project, SIGNAL(triggered()), SLOT(slot_load_project()));
-    connect(save_project, SIGNAL(triggered()), SLOT(slot_save_project()));
-    connect(save_as_project, SIGNAL(triggered()), SLOT(slot_save_as_project()));
-    connect(create_project, SIGNAL(triggered()), SLOT(slot_create_project()));
+void MainWindow::connect_slots()
+{
+    // Кннектим пункты меню файл
+    connect(&faile_actions[0], SIGNAL(triggered()), SLOT(slot_load_project()));
+    connect(&faile_actions[1], SIGNAL(triggered()), SLOT(slot_save_project()));
+    connect(&faile_actions[2], SIGNAL(triggered()), SLOT(slot_save_as_project()));
+    connect(&faile_actions[3], SIGNAL(triggered()), SLOT(slot_create_project()));
+    // Кннектим пункты меню шаблонов
+    connect(&sample_actions[0], SIGNAL(triggered()), SLOT(slot_add_sample_sheet()));
+    connect(&sample_actions[1], SIGNAL(triggered()), SLOT(slot_del_sample_actived()));
+    // Выбор компоновки
+    connect(ui->listView, SIGNAL(clicked(QModelIndex)), this, SLOT(slot_paint_solution(QModelIndex)));
 
-    connect(ui->listView, SIGNAL(clicked(const QModelIndex)), this, SLOT(slot_paint_solution(const QModelIndex)));
     connect(this, SIGNAL(sig_check_complet()), this, SLOT(slot_edit_finished()));
-    connect(vec_list_ss[0], SIGNAL(triggered()), SLOT(slot_add_sample_sheet()));
-    connect(vec_list_ss[1], SIGNAL(triggered()), SLOT(slot_read_size_list_fsh()));
     connect(ui->pushButton, SIGNAL(clicked()), this, SLOT(slot_run()));
     connect(this, SIGNAL(sig_error(QString)), this, SLOT(slot_error(QString)));
+}
+
+void MainWindow::slot_del_sample_actived()
+{
+    QFont font;
+    bool flag;
+    //Если нажата кнопка Удаления, то при нажатии на шаблоны, они будут удаляться
+    if (sample_actions[1].isChecked()) {
+        flag = true;
+        ui->menu_sample->showTearOffMenu(this->cursor().pos());
+        font.setBold(true);
+        font.setItalic(true);
+    } else {
+        flag = false;
+        ui->menu_sample->hideTearOffMenu();
+        font.setBold(false);
+        font.setItalic(false);
+    }
+    for (int i = 0; i < vec_sample_sheets.size(); i++) {
+        vec_sample_sheets[i]->setCheckable(flag);
+        vec_sample_sheets[i]->setFont(font);
+    }
+}
+
+void MainWindow::preparation_prog()
+{
+    //Создание папки Projects, если её нет
+    if (!QDir("Projects").exists()) {
+        QDir().mkdir("Projects");
+    }
+    //Загрузка шаблонов из файла json
+    proj_work.load_samples(vec_sample_sheets);
+    //Добавление в меню шаблонов и connect
+    for (int i = 0; i < vec_sample_sheets.size(); i++) {
+        ui->menu_sample->addAction(vec_sample_sheets[i]);
+        connect(vec_sample_sheets[i], SIGNAL(triggered()), SLOT(slot_sample_selected()));
+    }
+    //Добавление первого шаблона на сцену
+    sample_sheet = new QGraphicsRectItem;
+    scene->addItem(sample_sheet);
+    if (!vec_sample_sheets.isEmpty()) {
+        QStringList sample = vec_sample_sheets[0]->text().split(" x ");
+        paint_list_sheet(sample[0].toInt(), sample[1].toInt());
+    }
 }
 
 MainWindow::~MainWindow()
@@ -53,6 +125,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::add_stock_in_vec(ProjectRect cur_stock)
 {
+    //Добавление заготовки в вектор заготовок с сортировкой
     vec_stok << cur_stock;
     for (int i = vec_stok.size() - 1; i > 0; i--) {
         if (vec_stok[i].width() < vec_stok[i - 1].width()) {
@@ -121,6 +194,7 @@ bool MainWindow::algoritm_cutting()
 
 void MainWindow::slot_error(QString error_massage)
 {
+    //Вывод ошибки в StatusBar
     QStringList message = error_massage.split("_");
     error_code = message[1];
     message_for_client->setText(message[0]);
@@ -128,6 +202,7 @@ void MainWindow::slot_error(QString error_massage)
 
 void MainWindow::clear_all_data()
 {
+    //Очистка всех данных
     clear_scene();
     if (!message_for_client->text().isEmpty()) {
         message_for_client->clear();
@@ -232,7 +307,7 @@ bool MainWindow::algoritm_search_comb()
         vec_comb_form.clear();
         vec_stok.clear();
         vec_form.clear();
-        // Выбераем следующую комбинацию поворотов
+        // Выбираем следующую комбинацию поворотов
         ngv = next_group_variant(group_complete);
         // Первый остаток
         vec_stok << ProjectRect(0, 0, currnet_sheet.width(), currnet_sheet.height());
@@ -256,6 +331,7 @@ bool MainWindow::algoritm_search_comb()
 
 void MainWindow::sort_vec_form_info(bool sort_index)
 {
+    //Сортировка индексов групп форм или групп форм
     for (int i = 0; i < vec_form_info.size() - 1; i++) {
         for (int j = 0; j < vec_form_info.size() - 1 - i; j++) {
             if (sort_index) {
@@ -288,6 +364,7 @@ bool MainWindow::check_on_dimension(int stok_w, int stok_l)
 
 bool next_group_variant(QVector<bool>& group_complete)
 {
+    //Получение варианта компоновки
     for (int i = group_complete.size() - 1; i >= 0;) {
         if (group_complete[i] == 0) {
             group_complete[i] = 1;
@@ -305,6 +382,7 @@ bool next_group_variant(QVector<bool>& group_complete)
 
 void MainWindow::slot_edit_finished()
 {
+    //Если фрейм был заполнен, то создается новый
     if (!vec_frame[vec_frame.size() - 1]->findChild<QLineEdit*>("ln_name")->text().isEmpty() && !vec_frame[vec_frame.size() - 1]->findChild<QLineEdit*>("ln_length")->text().isEmpty() && !vec_frame[vec_frame.size() - 1]->findChild<QLineEdit*>("ln_width")->text().isEmpty() && !vec_frame[vec_frame.size() - 1]->findChild<QLineEdit*>("ln_number")->text().isEmpty()) {
         add_input_field();
     }
@@ -312,10 +390,13 @@ void MainWindow::slot_edit_finished()
 
 void MainWindow::slot_del_input_field()
 {
+    //Очистка данных
     clear_all_data();
+    //Если фреймов больше одного
     if (vec_frame.size() > 1) {
         int n_form = vec_frame.size();
         bool del_flg = false;
+        //Проходим по фреймам и удаляем выбранный
         for (int i = 0; i < n_form; i++) {
             if (vec_frame[i]->findChild<QPushButton*>("butt_del")->isChecked()) {
                 ui->vertical_layout->removeWidget(vec_frame[i]);
@@ -328,6 +409,7 @@ void MainWindow::slot_del_input_field()
             if (vec_frame.size() == i) {
                 break;
             }
+            //Корректно нумеруем после удаления фрейма
             if (del_flg) {
                 vec_frame[i]->findChild<QLabel*>("lbl_index")->setText(QString::number(i + 1));
             }
@@ -342,7 +424,9 @@ void MainWindow::slot_del_input_field()
 
 void MainWindow::add_input_field()
 {
+    //Создаем фрейм
     vec_frame << new QFrame(this);
+    //Cоздание label для ширины, длины, количества формы, и для индекса фрейма
     QLabel* lbl_length = new QLabel(vec_frame[vec_frame.size() - 1]);
     QLabel* lbl_width = new QLabel(vec_frame[vec_frame.size() - 1]);
     QLabel* lbl_index = new QLabel(vec_frame[vec_frame.size() - 1]);
@@ -357,6 +441,7 @@ void MainWindow::add_input_field()
     ln_number->setObjectName("ln_number");
     QLineEdit* ln_name = new QLineEdit(vec_frame[vec_frame.size() - 1]);
     ln_name->setObjectName("ln_name");
+    //Создание кнопки для удаления фрейма
     QPushButton* butt_del = new QPushButton(vec_frame[vec_frame.size() - 1]);
     butt_del->setObjectName("butt_del");
 
@@ -406,8 +491,10 @@ void MainWindow::add_input_field()
 
     ui->vertical_layout->addWidget(vec_frame[vec_frame.size() - 1]);
 }
+
 void MainWindow::load_fill_frame()
 {
+    //Загрузка данных во фрейм
     for (int i = 0; i < vec_form_info.size(); i++) {
         add_input_field();
         vec_frame[i]->findChild<QLineEdit*>("ln_name")->setText(vec_form_info[i].name());
@@ -417,16 +504,20 @@ void MainWindow::load_fill_frame()
     }
     add_input_field();
 }
+
 void MainWindow::load_model_view()
 {
+    //Заполнение listview в зависимости от числа решений
     QStringList list_solutions;
     for (int i = 0; i < vec_solution.size(); i++) {
         list_solutions << "Вариант " + QString::number(i + 1);
     }
     model->setStringList(list_solutions);
 }
+
 void MainWindow::clear_scene()
 {
+    //Очистка сцены от всех форм
     for (int i = 0; i < vec_rects.size(); i++) {
         scene->removeItem(vec_rects[i]);
         scene->removeItem(vec_text_rects[i]);
@@ -441,102 +532,118 @@ void MainWindow::clear_scene()
     ui->graphicsView->update();
 }
 
-void MainWindow::create_sample_sheet()
-{
-    QAction* plus = new QAction();
-    QAction* a4 = new QAction();
-    a4->setText("297 x 210");
-    plus->setText("Добавить шаблон..");
-    vec_list_ss.push_back(plus);
-    vec_list_ss.push_back(a4);
-    ui->menu->addAction(vec_list_ss[0]);
-    ui->menu->addAction(vec_list_ss[1]);
-    for (int i = 0; i < vec_sheet_list_bd.size(); i++) {
-        QAction* sheet = new QAction();
-        sheet->setText(vec_sheet_list_bd[i]);
-        vec_list_ss.push_back(sheet);
-        ui->menu->addAction(vec_list_ss[vec_list_ss.size() - 1]);
-        connect(vec_list_ss[vec_list_ss.size() - 1], SIGNAL(triggered()), SLOT(slot_read_size_list_fsh()));
-    }
-}
-
 void MainWindow::slot_add_sample_sheet()
 {
+    //Создается диалоговое окно для добавления нового шаблона
     Add_ss* dialog = new Add_ss;
-    dialog->setFixedSize(200, 100);
-    dialog->setWindowTitle("Создание шаблона");
-    QString we_he;
-    if (dialog->exec()) {
-        we_he = QString::number(dialog->h);
-        we_he += " x " + QString::number(dialog->w);
+    QString size_sample;
+    if (dialog->exec() && dialog->l() != 0 && dialog->w() != 0) {
+        size_sample = QString::number(dialog->l()) + " x " + QString::number(dialog->w());
+    } else {
+        return;
     }
+    //Добавление шаблона в меню шаблонов
     QAction* sheet = new QAction();
-    ui->menu->addAction(sheet);
-    sheet->setText(we_he);
-    vec_list_ss.push_back(sheet);
-    connect(vec_list_ss[vec_list_ss.size() - 1], SIGNAL(triggered()), SLOT(slot_read_size_list_fsh()));
+    ui->menu_sample->addAction(sheet);
+    sheet->setText(size_sample);
+    vec_sample_sheets.push_back(sheet);
+    connect(vec_sample_sheets[vec_sample_sheets.size() - 1], SIGNAL(triggered()), SLOT(slot_sample_selected()));
+    //Отрисовка добавленного шаблона
+    paint_list_sheet(dialog->l(), dialog->w());
 }
 
-void MainWindow::paint_list_sheet(int w, int h)
+void MainWindow::paint_list_sheet(int w, int l)
 {
-    //    ui->graphicsView->update();
-    sample_sheet->setRect(0, 0, w * increase, h * increase);
-    currnet_sheet = QSize(w, h);
-}
-
-void MainWindow::slot_read_size_list_fsh()
-{
+    //Очистка сцены
     clear_scene();
+    sample_sheet->setRect(0, 0, w * increase, l * increase);
+    //Задаем размеры для текущего шаблона
+    currnet_sheet = QSize(w, l);
+}
 
+void MainWindow::slot_sample_selected()
+{
     QObject* name = QObject::sender();
     QAction* sheet = qobject_cast<QAction*>(name);
-    QStringList we_he = sheet->text().split(" x ");
-    paint_list_sheet(we_he[0].toInt(), we_he[1].toInt());
+    //Проверяем на удаление
+    if (sample_actions[1].isChecked()) {
+        //Удаление шаблона
+        ui->menu_sample->removeAction(sheet);
+        for (int i = 0; i < vec_sample_sheets.size(); i++) {
+            if (vec_sample_sheets[i]->isChecked()) {
+                vec_sample_sheets.remove(i);
+                break;
+            }
+        }
+    } else {
+        //Отрисовка шаблона на сцене
+        QStringList size_sample = sheet->text().split(" x ");
+        paint_list_sheet(size_sample[0].toInt(), size_sample[1].toInt());
+    }
 }
+
 void MainWindow::slot_save_as_project()
 {
+    //Сохранение проекта в файл с выбором пути
     proj_work.saveAs(vec_form_info, vec_solution);
 }
+
 void MainWindow::slot_create_project()
 {
+    //Очистка данных
     clear_all_data();
+    //Удаление всех фреймов
     for (int i = vec_frame.size() - 1; i >= 0; i--) {
         ui->vertical_layout->removeWidget(vec_frame[i]);
         delete vec_frame[i];
         vec_frame.remove(i);
         ui->vertical_layout->update();
     }
+    //Очистка сцены
     clear_scene();
+    //Добавляем пустой фрейм
     add_input_field();
-    proj_work.path = QString();
+    proj_work.path_projects = QString();
+    //Очистка вариантов решений
     for (int i = model->rowCount() - 1; i >= 0; i--) {
         model->removeRow(i);
     }
 }
+
 void MainWindow::slot_save_project()
 {
-    proj_work.save(vec_form_info, vec_solution);
+    //Сохранение проекта в файл без выбора пути
+    proj_work.saveAs(vec_form_info, vec_solution, true);
 }
+
 void MainWindow::slot_load_project()
 {
+    //Очистка данных
     clear_all_data();
+    //Удаление всех фреймов
     for (int i = vec_frame.size() - 1; i >= 0; i--) {
         ui->vertical_layout->removeWidget(vec_frame[i]);
         delete vec_frame[i];
         vec_frame.remove(i);
         ui->vertical_layout->update();
     }
+    //Очистка сцены
     clear_scene();
+    //Очистка варинтов компоновки
     for (int i = model->rowCount() - 1; i >= 0; i--) {
         model->removeRow(i);
     }
+    //Загрузка проекта из файла
     proj_work.load(vec_form_info, vec_solution);
+    //Загрузка фреймов
     load_fill_frame();
+    //Загрузка вариантов компоновки
     load_model_view();
 }
 
 void MainWindow::setstyle_list_vec_text_rects(QGraphicsTextItem& text_rect, QGraphicsRectItem* rect)
 {
+    //Задание размера текста для описания формы
     qreal x_rect, y_rect, w_rect, h_rect;
     QRectF getposrect;
     getposrect = rect->rect();
@@ -550,8 +657,9 @@ void MainWindow::setstyle_list_vec_text_rects(QGraphicsTextItem& text_rect, QGra
 
 void MainWindow::slot_paint_solution(const QModelIndex& index)
 {
-
+    //Очистка сцены
     clear_scene();
+    //Проходим по варианту компоновки добавляем формы в вектор форм
     for (int i = 0; i < vec_solution[index.row()].size(); i++) {
         vec_rects << new QGraphicsRectItem(vec_solution[index.row()][i].x() * increase,
             vec_solution[index.row()][i].y() * increase,
@@ -559,6 +667,7 @@ void MainWindow::slot_paint_solution(const QModelIndex& index)
             vec_solution[index.row()][i].length() * increase);
         vec_text_rects << new QGraphicsTextItem(vec_solution[index.row()][i].name() + "\n" + QString::number(vec_solution[index.row()][i].width()) + "x" + QString::number(vec_solution[index.row()][i].length()));
     }
+    //Отрисовываем формы на сцене
     for (int i = 0; i < vec_rects.size(); i++) {
         scene->addItem(vec_rects[i]);
         setstyle_list_vec_text_rects(*vec_text_rects[i], vec_rects[i]);
