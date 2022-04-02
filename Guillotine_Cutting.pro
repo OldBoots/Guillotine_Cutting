@@ -14,18 +14,21 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     project.cpp \
-    projectrect.cpp
+    projectrect.cpp \
+    savingchanges.cpp
 
 HEADERS += \
     add_ss.h \
     form.h \
     mainwindow.h \
     project.h \
-    projectrect.h
+    projectrect.h \
+    savingchanges.h
 
 FORMS += \
     add_ss.ui \
-    mainwindow.ui
+    mainwindow.ui \
+    savingchanges.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

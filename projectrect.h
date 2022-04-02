@@ -4,13 +4,14 @@
 #include <QPoint>
 #include <QString>
 
-class ProjectRect{        // Параметры заготовки.
+class ProjectRect { // Параметры заготовки.
     QString r_name;
     QPoint r_top;
     int r_length;
     int r_width;
     bool r_added;
     bool r_turn;
+
 public:
     ProjectRect(QPoint top, int width, int length, QString name = QString(), bool added = false);
     ProjectRect(int x, int y, int width, int length, QString name = QString(), bool added = false);

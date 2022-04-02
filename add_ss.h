@@ -7,16 +7,17 @@ namespace Ui {
 class Add_ss;
 }
 
-class Add_ss : public QDialog{          // Диалоговое окно для добавления шаблона
+class Add_ss : public QDialog { // Диалоговое окно для добавления шаблона
     Q_OBJECT
 
 public:
-    explicit Add_ss(QWidget *parent = nullptr);
+    explicit Add_ss(QWidget* parent = nullptr);
     ~Add_ss();
     int w();
     int l();
+
 private:
-    Ui::Add_ss *ui;
+    Ui::Add_ss* ui;
     int length;
     int width;
 
