@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include <QCloseEvent>
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -15,6 +16,22 @@ MainWindow::MainWindow(QWidget* parent)
 void MainWindow::closeEvent(QCloseEvent* event)
 {
     proj_work.save_samples(vec_sample_sheets);
+    // Если были произведены изменения в проекте, то будет предложено их сохранить
+    if (flag_mod) {
+        if (dialog_sch.exec()) {
+            qDebug() << dialog_sch.exec_flag();
+            if (dialog_sch.exec_flag() == -1) {
+                event->ignore();
+                return;
+            }
+            if (dialog_sch.exec_flag() == 1) {
+                slot_save_project();
+            }
+            if (dialog_sch.exec_flag() == 0) {
+                event->accept();
+            }
+        }
+    }
     QMainWindow::closeEvent(event);
 }
 
@@ -238,6 +255,8 @@ void MainWindow::clear_all_data()
 void MainWindow::slot_run()
 {
     QStringList list_solutions;
+    // Проект изменен
+    flag_mod = true;
     // Обнуляем данные
     clear_all_data();
     int area_sheet, area_general = 0;
@@ -382,6 +401,8 @@ bool next_group_variant(QVector<bool>& group_complete)
 
 void MainWindow::slot_edit_finished()
 {
+    // Проект изменен
+    flag_mod = true;
     //Если фрейм был заполнен, то создается новый
     if (!vec_frame[vec_frame.size() - 1]->findChild<QLineEdit*>("ln_name")->text().isEmpty() && !vec_frame[vec_frame.size() - 1]->findChild<QLineEdit*>("ln_length")->text().isEmpty() && !vec_frame[vec_frame.size() - 1]->findChild<QLineEdit*>("ln_width")->text().isEmpty() && !vec_frame[vec_frame.size() - 1]->findChild<QLineEdit*>("ln_number")->text().isEmpty()) {
         add_input_field();
@@ -390,6 +411,8 @@ void MainWindow::slot_edit_finished()
 
 void MainWindow::slot_del_input_field()
 {
+    // Проект изменен
+    flag_mod = true;
     //Очистка данных
     clear_all_data();
     //Если фреймов больше одного
@@ -424,9 +447,11 @@ void MainWindow::slot_del_input_field()
 
 void MainWindow::add_input_field()
 {
+    // Проект изменен
+    flag_mod = true;
     //Создаем фрейм
     vec_frame << new QFrame(this);
-    //Cоздание label для ширины, длины, количества формы, и для индекса фрейма
+    // Cоздание label для ширины, длины, количества формы, и для индекса фрейма
     QLabel* lbl_length = new QLabel(vec_frame[vec_frame.size() - 1]);
     QLabel* lbl_width = new QLabel(vec_frame[vec_frame.size() - 1]);
     QLabel* lbl_index = new QLabel(vec_frame[vec_frame.size() - 1]);
@@ -535,10 +560,9 @@ void MainWindow::clear_scene()
 void MainWindow::slot_add_sample_sheet()
 {
     //Создается диалоговое окно для добавления нового шаблона
-    Add_ss* dialog = new Add_ss;
     QString size_sample;
-    if (dialog->exec() && dialog->l() != 0 && dialog->w() != 0) {
-        size_sample = QString::number(dialog->l()) + " x " + QString::number(dialog->w());
+    if (dialog_as.exec() && dialog_as.l() != 0 && dialog_as.w() != 0) {
+        size_sample = QString::number(dialog_as.l()) + " x " + QString::number(dialog_as.w());
     } else {
         return;
     }
@@ -549,7 +573,7 @@ void MainWindow::slot_add_sample_sheet()
     vec_sample_sheets.push_back(sheet);
     connect(vec_sample_sheets[vec_sample_sheets.size() - 1], SIGNAL(triggered()), SLOT(slot_sample_selected()));
     //Отрисовка добавленного шаблона
-    paint_list_sheet(dialog->l(), dialog->w());
+    paint_list_sheet(dialog_as.l(), dialog_as.w());
 }
 
 void MainWindow::paint_list_sheet(int w, int l)
@@ -586,10 +610,24 @@ void MainWindow::slot_save_as_project()
 {
     //Сохранение проекта в файл с выбором пути
     proj_work.saveAs(vec_form_info, vec_solution);
+    // Изменения сохранены
+    flag_mod = false;
 }
 
 void MainWindow::slot_create_project()
 {
+    // Если были произведены изменения в проекте, то будет предложено их сохранить
+    if (flag_mod) {
+        if (dialog_sch.exec()) {
+            qDebug() << dialog_sch.exec_flag();
+            if (dialog_sch.exec_flag() == -1) {
+                return;
+            }
+            if (dialog_sch.exec_flag() == 1) {
+                slot_save_project();
+            }
+        }
+    }
     //Очистка данных
     clear_all_data();
     //Удаление всех фреймов
@@ -608,16 +646,31 @@ void MainWindow::slot_create_project()
     for (int i = model->rowCount() - 1; i >= 0; i--) {
         model->removeRow(i);
     }
+    // Изменения сохранены
+    flag_mod = false;
 }
 
 void MainWindow::slot_save_project()
 {
     //Сохранение проекта в файл без выбора пути
     proj_work.saveAs(vec_form_info, vec_solution, true);
+    // Изменения сохранены
+    flag_mod = false;
 }
 
 void MainWindow::slot_load_project()
 {
+    // Если были произведены изменения в проекте, то будет предложено их сохранить
+    if (flag_mod) {
+        if (dialog_sch.exec()) {
+            if (dialog_sch.exec_flag() == -1) {
+                return;
+            }
+            if (dialog_sch.exec_flag() == 1) {
+                slot_save_project();
+            }
+        }
+    }
     //Очистка данных
     clear_all_data();
     //Удаление всех фреймов
@@ -639,6 +692,8 @@ void MainWindow::slot_load_project()
     load_fill_frame();
     //Загрузка вариантов компоновки
     load_model_view();
+    // Изменения сохранены
+    flag_mod = false;
 }
 
 void MainWindow::setstyle_list_vec_text_rects(QGraphicsTextItem& text_rect, QGraphicsRectItem* rect)

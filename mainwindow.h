@@ -5,6 +5,7 @@
 #include "form.h"
 #include "project.h"
 #include "projectrect.h"
+#include "savingchanges.h"
 #include <QFileDialog>
 #include <QFrame>
 #include <QGraphicsRectItem>
@@ -21,13 +22,6 @@ namespace Ui {
 class MainWindow;
 }
 QT_END_NAMESPACE
-
-//struct ComboFormInfo {
-//    QString f_name;
-//    QPoint f_top;
-//    int f_widht;
-//    int f_lenght;
-//};
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -93,7 +87,10 @@ private:
     QString error_code;
     QLabel* message_for_client;
     QStringListModel* model;
+    bool flag_mod;
     const size_t increase = 1;
+    SavingChanges dialog_sch;
+    Add_ss dialog_as;
     Ui::MainWindow* ui;
 };
 
