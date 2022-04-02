@@ -37,6 +37,11 @@ void MainWindow::closeEvent(QCloseEvent* event)
 
 void MainWindow::create_ui()
 {
+    ui->pushButton->setStyleSheet("QPushButton { background-color: #B7CBD8 }");
+    //Заголовок окна
+    this->setWindowTitle("Guillotine cutting");
+    //Смена иконки приложения
+    setWindowIcon(QIcon(":/scissors.ico"));
     // Иницализируем и настраиваем графическу сцену
     scene = new QGraphicsScene;
     ui->graphicsView->setScene(scene);
@@ -133,6 +138,7 @@ void MainWindow::preparation_prog()
         QStringList sample = vec_sample_sheets[0]->text().split(" x ");
         paint_list_sheet(sample[0].toInt(), sample[1].toInt());
     }
+    flag_mod = false;
 }
 
 MainWindow::~MainWindow()
@@ -254,6 +260,10 @@ void MainWindow::clear_all_data()
 
 void MainWindow::slot_run()
 {
+    if (vec_frame.size() <= 1) {
+        return;
+    }
+    //
     QStringList list_solutions;
     // Проект изменен
     flag_mod = true;

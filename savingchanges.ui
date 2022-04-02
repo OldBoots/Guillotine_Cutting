@@ -24,7 +24,7 @@
         </font>
        </property>
        <property name="text">
-        <string>Сохраниь изменения?</string>
+        <string>Сохранить изменения?</string>
        </property>
       </widget>
      </item>

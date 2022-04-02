@@ -6,6 +6,8 @@ SavingChanges::SavingChanges(QWidget* parent)
     , ui(new Ui::SavingChanges)
 {
     ui->setupUi(this);
+    this->setWindowTitle("Сохранение изменений - Guillotine cutting");
+    setWindowIcon(QIcon(":/folder.ico"));
     connect(ui->butt_yes, SIGNAL(clicked()), this, SLOT(slot_yes()));
     connect(ui->butt_no, SIGNAL(clicked()), this, SLOT(slot_no()));
     connect(ui->butt_cancel, SIGNAL(clicked()), this, SLOT(slot_cancel()));

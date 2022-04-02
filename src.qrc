@@ -1,5 +1,8 @@
 <RCC>
     <qresource prefix="/">
         <file>close.png</file>
+        <file>scissors.ico</file>
+        <file>folder.ico</file>
+        <file>sample.ico</file>
     </qresource>
 </RCC>

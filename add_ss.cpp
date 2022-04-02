@@ -9,6 +9,7 @@ Add_ss::Add_ss(QWidget* parent)
     ui->setupUi(this);
     this->setFixedSize(200, 100);
     this->setWindowTitle("Создание шаблона");
+    setWindowIcon(QIcon(":/sample.ico"));
     length = width = 0;
     ui->buttonBox->button(QDialogButtonBox::Ok)->setText("Oк");
     ui->buttonBox->button(QDialogButtonBox::Cancel)->setText("Отмена");
