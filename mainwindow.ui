@@ -30,8 +30,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>385</width>
-           <height>238</height>
+           <width>378</width>
+           <height>228</height>
           </rect>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -77,21 +77,21 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>20</height>
+     <height>24</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menu">
+   <widget class="QMenu" name="menu_sample">
     <property name="title">
      <string>Шаблоны</string>
     </property>
    </widget>
-   <widget class="QMenu" name="file">
+   <widget class="QMenu" name="menu_file">
     <property name="title">
      <string>Файл</string>
     </property>
    </widget>
-   <addaction name="file"/>
-   <addaction name="menu"/>
+   <addaction name="menu_file"/>
+   <addaction name="menu_sample"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="action">
