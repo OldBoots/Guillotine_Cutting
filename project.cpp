@@ -5,43 +5,47 @@ Project::Project()
 }
 bool Project::file_open(bool read)
 {
-    if (!read) {
-        if (!file.open(QIODevice::ReadWrite | QIODevice::Text)) {
-            qDebug() << "File open error";
+    //Открытие файла для чтения или записи
+    if (read) {
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
             return 0;
         } else {
-            qDebug() << "File open!";
         }
     } else {
-        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            qDebug() << "File open error";
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
             return 0;
-        } else {
-            qDebug() << "File open!";
         }
     }
     return 1;
 }
 bool Project::load(QVector<FormInfo>& vec_form_info, QVector<QVector<ProjectRect>>& vec_solution)
 {
-    QString file_text;
-    path = QFileDialog::getOpenFileName(0, "Открыть проект", "", "*.json");
-    if (!path.isEmpty()) {
+    //Получаем путь к проекту
+    path_projects = QFileDialog::getOpenFileName(0, "Открыть проект", "", "*.json");
+    //Если выбор был сделан
+    if (!path_projects.isEmpty()) {
+        //Очистка полей проекта перед загрузкой
         vec_form_info.clear();
         vec_solution.clear();
-        file.setFileName(path);
+        //Открываем файл для чтения
+        file.setFileName(path_projects);
         if (!file_open(true)) {
             return 0;
         }
+        //Считываем весь текст из файла в строку
+        QString file_text;
         file_text = file.readAll();
+        //Преобразум строку в jsondocument
         QJsonDocument docum = QJsonDocument::fromJson(file_text.toUtf8());
         QJsonObject jsonObject = docum.object();
+        //Находим нужный массив по ключу
         QJsonArray jsonArray = jsonObject["vec_form_info"].toArray();
-        //Проходим по всем формам
+        //Проходим по всем формам и записываем данные в vec_form_info
         for (int j = 0; j < jsonArray.size(); j++) {
             QJsonValue value = jsonArray[j];
             vec_form_info.push_back(FormInfo(value["name"].toString(), value["width"].toInt(), value["length"].toInt(), value["numb"].toInt()));
         }
+        //Проходим по всем вариантам компоновки и записываем их в vec_solution
         QVector<ProjectRect> one_vec_sol;
         for (int i = 1; i < jsonObject.size(); i++) {
             one_vec_sol.clear();
@@ -58,48 +62,40 @@ bool Project::load(QVector<FormInfo>& vec_form_info, QVector<QVector<ProjectRect
     }
     return 1;
 }
-bool Project::saveAs(QVector<FormInfo> vec_form_info, QVector<QVector<ProjectRect>> vec_solution)
+bool Project::saveAs(QVector<FormInfo> vec_form_info, QVector<QVector<ProjectRect>> vec_solution, bool save_flag)
 {
-    path = QFileDialog::getSaveFileName(0, "Сохранение проекта", "", "*.json");
-    if (!path.isEmpty()) {
-        file.setFileName(path);
-        if (!file_open()) {
-            qDebug() << "file is_not open";
-            return 0;
+    //Если необходимо указать путь, указываем
+    if (save_flag) {
+        if (path_projects.isEmpty()) {
+            path_projects = QFileDialog::getSaveFileName(0, "Сохранение проекта", QDir::currentPath() + "//Projects//unnamed.json", "*.json");
         }
-        qDebug() << "file is open";
-        save_vec_form_info(vec_form_info);
-        save_vec_sol(vec_solution);
-        doc.setObject(obj);
-        file.write(doc.toJson());
-        file.close();
     } else {
-        qDebug() << "file no path open";
-        return 0;
+
+        path_projects = QFileDialog::getSaveFileName(0, "Сохранение проекта", QDir::currentPath() + "//Projects//unnamed.json", "*.json");
     }
+    //Сохраняем в файл информацию о формах и их варианты компоновок
+    save(vec_form_info, vec_solution);
     return 1;
 }
 bool Project::save(QVector<FormInfo> vec_form_info, QVector<QVector<ProjectRect>> vec_solution)
 {
-    if (!path.isEmpty()) {
-        file.setFileName(path);
+    //Сохранение данных проекта в файл
+    if (!path_projects.isEmpty()) {
+        file.setFileName(path_projects);
         if (!file_open()) {
             return 0;
         }
         save_vec_form_info(vec_form_info);
         save_vec_sol(vec_solution);
-        //Считать формы
         doc.setObject(obj);
         file.write(doc.toJson());
         file.close();
-    } else {
-        qDebug() << "save_ass";
-        saveAs(vec_form_info, vec_solution);
     }
     return 1;
 }
 void Project::save_vec_form_info(QVector<FormInfo> vec_form_info)
 {
+    //Проходим по формам и записываем данные о них
     QJsonObject form_info;
     QJsonArray arr_form_info;
     for (int i = 0; i < vec_form_info.size(); i++) {
@@ -113,6 +109,7 @@ void Project::save_vec_form_info(QVector<FormInfo> vec_form_info)
 }
 void Project::save_vec_sol(QVector<QVector<ProjectRect>> vec_solution)
 {
+    //Проходим по всем вариантам компоновки и записываем их
     QJsonObject form;
     for (int i = 0; i < vec_solution.size(); i++) {
         QJsonArray arr_form;
@@ -126,4 +123,51 @@ void Project::save_vec_sol(QVector<QVector<ProjectRect>> vec_solution)
         }
         obj.insert("vec_solutions[" + QString::number(i) + "]", arr_form);
     }
+}
+bool Project::save_samples(QVector<QAction*> vec_sample_sheets)
+{
+    QJsonDocument doc;
+    QJsonObject obj;
+    QJsonObject sample;
+    QJsonArray arr_form;
+    //Открываем файл
+    file.setFileName(path_sample);
+    if (!file_open()) {
+        return 0;
+    }
+    //Проходим по всем шаблонам и сохраняем их в файл
+    QStringList data_sample;
+    for (int i = 0; i < vec_sample_sheets.size(); i++) {
+        data_sample = vec_sample_sheets[i]->text().split(" x ");
+        sample.insert("width", data_sample[0]);
+        sample.insert("length", data_sample[1]);
+        arr_form.append(sample);
+    }
+    obj.insert("sample_sheet", arr_form);
+    doc.setObject(obj);
+    file.write(doc.toJson());
+    file.close();
+    return 1;
+}
+bool Project::load_samples(QVector<QAction*>& vec_sample_sheets)
+{
+    //Открываем файл для считывания
+    file.setFileName(path_sample);
+    if (!file_open(1)) {
+        return 0;
+    }
+    QString sample_file_txt;
+    sample_file_txt = file.readAll();
+    QJsonDocument docum = QJsonDocument::fromJson(sample_file_txt.toUtf8());
+    QJsonObject jsonObject = docum.object();
+    QJsonArray jsonArray = jsonObject["sample_sheet"].toArray();
+    qDebug() << jsonArray.size();
+    //Проходим по всем шаблонам и записываем данные в vec_sample_sheets
+    for (int j = 0; j < jsonArray.size(); j++) {
+        QJsonValue value = jsonArray[j];
+        QAction* one_sample = new QAction;
+        one_sample->setText(value["length"].toString() + " x " + value["width"].toString());
+        vec_sample_sheets.push_back(one_sample);
+    }
+    return 1;
 }

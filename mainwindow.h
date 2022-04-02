@@ -56,6 +56,7 @@ private:
     bool algoritm_search_comb();
     bool algoritm_cutting(); // алгоритм.
     bool check_on_dimension(int stok_w, int stok_l);
+    void closeEvent(QCloseEvent* event) override;
 
 private slots:
     void slot_del_input_field(); // Удаление фрейма по нажатию кнопки с крестиком.
@@ -70,6 +71,7 @@ private slots:
     void slot_save_as_project(); //Сохранение с выбором пути
     void slot_create_project(); //Удаление проекта
     void slot_del_sample_actived();
+
 private:
     QVector<ProjectRect> vec_stok;
     QVector<QAction*> vec_sample_sheets;
@@ -86,7 +88,7 @@ private:
     QVector<ProjectRect> vec_comb_form;
     QVector<QVector<ProjectRect>> vec_solution;
     QGraphicsScene* scene;
-    QGraphicsRectItem* sample_sheet = new QGraphicsRectItem;
+    QGraphicsRectItem* sample_sheet;
     QSize currnet_sheet;
     QString error_code;
     QLabel* message_for_client;
